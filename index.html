@@ -306,9 +306,12 @@ textarea.code-box.err{border-color:var(--red);}
     <!-- Floating tool buttons — LEFT -->
     <div id="tools">
       <button class="fab on" id="fbPan"    onclick="setTool('pan')"    data-tip="Pan">✋</button>
-      <button class="fab"    id="fbPlace"  onclick="onFbPlace()"       data-tip="Place Chest">📦</button>
+      <button class="fab"    id="fbPlace"  onclick="onFbPlace()"       data-tip="Place Chest"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="8" width="16" height="10" rx="1.5" fill="currentColor" opacity=".18" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="5" width="16" height="4" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="9.5" width="4" height="3" rx=".75" fill="currentColor"/></svg></button>
       <button class="fab"    id="fbClaim"  onclick="setTool('claim')"  data-tip="Claim chunk">＋</button>
       <button class="fab"    id="fbRemove" onclick="setTool('remove')" data-tip="Remove chunk">－</button>
+      <div class="fab-divider"></div>
+      <button class="fab"    id="fbSand"   onclick="setTool('sand')"   data-tip="Sandwall" style="font-size:16px">🟫</button>
+      <button class="fab"    id="fbMark"   onclick="setTool('mark')"   data-tip="Add marker" style="font-size:16px">📍</button>
     </div>
 
     <!-- Floating util buttons — RIGHT -->
@@ -371,6 +374,10 @@ let lastDist=0;
 let activeTool='pan';
 
 let bases=[], active=null, placing=null, selCol='#8b5cf6';
+
+// ── OVERLAY DATA ─────────────────────────────
+const sandwalls = new Set();   // Set of "cx,cz" keys
+let markers = [];              // [{id, cx, cz, emoji, label}]
 const COLORS=['#8b5cf6','#ef4444','#3b82f6','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316'];
 
 // ── SWATCHES ─────────────────────────────────
@@ -394,7 +401,7 @@ function updateColorDot(){ const d=document.getElementById('colorDot'); if(d)d.s
 updateColorDot();
 
 // ── TOOL MANAGEMENT ──────────────────────────
-const TOOL_IDS={pan:'fbPan',place:'fbPlace',claim:'fbClaim',remove:'fbRemove'};
+const TOOL_IDS={pan:'fbPan',place:'fbPlace',claim:'fbClaim',remove:'fbRemove',sand:'fbSand',mark:'fbMark'};
 function setTool(t){
   activeTool=t;
   Object.entries(TOOL_IDS).forEach(([k,id])=>{
@@ -503,7 +510,7 @@ function draw(){
     }
   }
 
-  // PASS 2: borders as fillRect strips (pixel-perfect, no bleed)
+  // PASS 2: borders as fillRect strips — strictly inset inside each chunk's own pixels
   const owner=new Map();
   for(const b of bases)for(const k of b.chunks)owner.set(k,b.id);
   const BW=Math.max(1,Math.min(3,Math.round(scale*1.2)));
@@ -512,13 +519,21 @@ function draw(){
     ctx.fillStyle=b.color;
     for(const k of b.chunks){
       const[cx,cz]=UK(k);
-      const x1=PX(cx),y1=PZ(cz),w=PW(cx),h=PH(cz);
+      const x1=PX(cx),y1=PZ(cz);
+      const x2=PX(cx+1),y2=PZ(cz+1);
+      const w=x2-x1, h=y2-y1;
+      if(w<=0||h<=0)continue;
+      const bw=Math.min(BW,Math.floor(w/2),Math.floor(h/2));
       const nT=owner.get(K(cx,cz-1)),nB=owner.get(K(cx,cz+1));
       const nL=owner.get(K(cx-1,cz)),nR=owner.get(K(cx+1,cz));
-      if(!nT||nT===b.id) ctx.fillRect(x1,y1,w,BW);
-      if(!nB||nB===b.id) ctx.fillRect(x1,y1+h-BW,w,BW);
-      if(!nL||nL===b.id) ctx.fillRect(x1,y1,BW,h);
-      if(!nR||nR===b.id) ctx.fillRect(x1+w-BW,y1,BW,h);
+      // top strip — y1 to y1+bw, strictly inside this chunk
+      if(!nT||nT===b.id) ctx.fillRect(x1, y1, w, bw);
+      // bottom strip — y2-bw to y2
+      if(!nB||nB===b.id) ctx.fillRect(x1, y2-bw, w, bw);
+      // left strip
+      if(!nL||nL===b.id) ctx.fillRect(x1, y1, bw, h);
+      // right strip
+      if(!nR||nR===b.id) ctx.fillRect(x2-bw, y1, bw, h);
     }
     // chest
     const cpx=PX(b.chX)+PW(b.chX)/2,cpz=PZ(b.chZ)+PH(b.chZ)/2;
@@ -557,6 +572,79 @@ function draw(){
     } else{fill='#f0e9ff';stroke='#8b5cf6';}
     ctx.fillStyle=fill;ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));
     ctx.strokeStyle=stroke;ctx.lineWidth=2;
+    ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);
+  }
+
+  // ── SANDWALL CHUNKS ──────────────────────────
+  if(sandwalls.size>0){
+    // Cross-hatch pattern: draw fill then diagonal stripes
+    for(const k of sandwalls){
+      const[cx,cz]=UK(k);
+      const x1=PX(cx),y1=PZ(cz),w=PW(cx),h=PH(cz);
+      if(w<=0||h<=0)continue;
+      // base fill
+      ctx.fillStyle='#f5e6c0';
+      ctx.fillRect(x1,y1,w,h);
+      // diagonal stripes
+      ctx.save();
+      ctx.beginPath();ctx.rect(x1,y1,w,h);ctx.clip();
+      ctx.strokeStyle='#d4a843';ctx.lineWidth=1.5;
+      const step=Math.max(4,w/3);
+      for(let s=-(h);s<w+h;s+=step){
+        ctx.beginPath();ctx.moveTo(x1+s,y1);ctx.lineTo(x1+s+h,y1+h);ctx.stroke();
+      }
+      ctx.restore();
+      // border
+      const bw2=Math.max(1,Math.min(2,Math.round(scale)));
+      ctx.fillStyle='#c4902a';
+      ctx.fillRect(x1,y1,w,bw2);
+      ctx.fillRect(x1,y1+h-bw2,w,bw2);
+      ctx.fillRect(x1,y1,bw2,h);
+      ctx.fillRect(x1+w-bw2,y1,bw2,h);
+    }
+  }
+
+  // ── SANDWALL HOVER ───────────────────────────
+  if(activeTool==='sand'&&hcx>=0&&hcz>=0){
+    const already=sandwalls.has(K(hcx,hcz));
+    ctx.fillStyle=already?'rgba(220,80,80,.18)':'rgba(212,168,67,.22)';
+    ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));
+    ctx.strokeStyle=already?'#ef4444':'#c4902a';ctx.lineWidth=2;
+    ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);
+  }
+
+  // ── MARKERS ──────────────────────────────────
+  if(markers.length>0&&scale>0.3){
+    for(const m of markers){
+      const cpx=PX(m.cx)+PW(m.cx)/2;
+      const cpz=PZ(m.cz)+PH(m.cz)/2;
+      const fs=Math.max(10,Math.min(18,TILE*scale*.6));
+      // emoji
+      ctx.font=`${fs}px sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(m.emoji,cpx,cpz+2);
+      // label (only when zoomed enough)
+      if(scale>0.7&&m.label){
+        const lfs=Math.max(8,Math.min(11,TILE*scale*.38));
+        ctx.font=`600 ${lfs}px Inter,sans-serif`;
+        const tw=ctx.measureText(m.label).width+8;
+        const lx2=Math.round(cpx-tw/2), ly2=Math.round(cpz+4);
+        ctx.fillStyle='rgba(26,26,26,.85)';
+        ctx.beginPath();
+        ctx.roundRect(lx2,ly2,Math.round(tw),lfs+4,3);
+        ctx.fill();
+        ctx.fillStyle='#fff';
+        ctx.fillText(m.label,cpx,ly2+lfs+1);
+      }
+      ctx.textBaseline='alphabetic';
+    }
+  }
+
+  // ── MARKER HOVER ─────────────────────────────
+  if(activeTool==='mark'&&hcx>=0&&hcz>=0){
+    ctx.fillStyle='rgba(99,102,241,.15)';
+    ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2;
     ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);
   }
 
@@ -630,7 +718,65 @@ function updateBadge(){
   if(placing){b.style.color='#f59e0b';b.textContent='Click to place chest';}
   else if(activeTool==='claim'&&active){b.style.color=active.color;const l=maxC(active.chX,active.chZ)-active.chunks.size;b.textContent=`${active.name} · ${l} chunk${l!==1?'s':''} left`;}
   else if(activeTool==='remove'&&active){b.style.color='#ef4444';b.textContent=`${active.name} · click to remove`;}
+  else if(activeTool==='sand'){b.style.color='#c4902a';b.textContent='Click chunks to toggle sandwall';}
+  else if(activeTool==='mark'){b.style.color='#6366f1';b.textContent='Click to place / edit marker';}
   else{b.style.color='var(--sub)';b.textContent='Pan & zoom';}
+}
+
+// ── MARKER EDITOR ────────────────────────────
+const MARKER_EMOJIS=['📍','⚔️','🏰','💀','⚠️','🌊','🔥','🌲','🏠','⛏️','🛡️','👁️','❌','✅','⭐'];
+
+function openMarkerEdit(cx,cz,existingIdx){
+  const existing=existingIdx>=0?markers[existingIdx]:null;
+  document.getElementById('m-title').textContent=existing?'Edit Marker':'New Marker';
+  document.getElementById('m-sub').textContent=`Chunk X${(cx-CW/2)*16} Z${(cz-CH/2)*16}`;
+
+  const curEmoji=existing?existing.emoji:'📍';
+  const curLabel=existing?existing.label:'';
+
+  document.getElementById('m-body').innerHTML=`
+    <div style="margin-bottom:10px">
+      <div class="sec-label" style="margin-bottom:6px">Emoji</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px" id="emoji-picker">
+        ${MARKER_EMOJIS.map(e=>`<button onclick="pickEmoji(this,'${e}')" style="width:34px;height:34px;border-radius:8px;border:1.5px solid ${e===curEmoji?'var(--accent)':'var(--border)'};background:${e===curEmoji?'#ede9fe':'var(--panel)'};font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center" data-emoji="${e}">${e}</button>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="sec-label" style="margin-bottom:6px">Label (optional)</div>
+      <input id="markerLabel" class="field" type="text" maxlength="20" placeholder="Label…" value="${curLabel}" style="margin-bottom:0">
+    </div>
+    ${existing?`<button class="btn danger" style="margin-top:8px" onclick="deleteMarker(${existingIdx})">Remove marker</button>`:''}
+  `;
+
+  const ok=document.getElementById('m-ok');ok.style.display='';
+  ok.textContent=existing?'Save':'Add Marker';
+  ok.onclick=()=>{
+    const emoji=document.querySelector('#emoji-picker button[data-emoji].sel-emoji')||{dataset:{emoji:curEmoji}};
+    const selE=document.querySelector('#emoji-picker button.sel-emoji');
+    const finalEmoji=selE?selE.dataset.emoji:curEmoji;
+    const label=(document.getElementById('markerLabel').value||'').trim().slice(0,20);
+    if(existingIdx>=0){
+      markers[existingIdx]={...markers[existingIdx],emoji:finalEmoji,label};
+    } else {
+      markers.push({id:''+Date.now(),cx,cz,emoji:finalEmoji,label});
+    }
+    closeModal();draw();
+  };
+  document.getElementById('overlay').classList.add('show');
+}
+
+function pickEmoji(btn,emoji){
+  document.querySelectorAll('#emoji-picker button').forEach(b=>{
+    const on=b.dataset.emoji===emoji;
+    b.style.borderColor=on?'var(--accent)':'var(--border)';
+    b.style.background=on?'#ede9fe':'var(--panel)';
+    b.classList.toggle('sel-emoji',on);
+  });
+}
+
+function deleteMarker(idx){
+  markers.splice(idx,1);
+  closeModal();draw();
 }
 
 // ── ACTIONS ──────────────────────────────────
@@ -741,15 +887,29 @@ function handleTap(cx,cz){
     spawnRemoveAnim(cx,cz,col);
     refreshSidebar();updateBadge();return;
   }
+  if(activeTool==='sand'){
+    if(sandwalls.has(k)) sandwalls.delete(k);
+    else sandwalls.add(k);
+    draw();return;
+  }
+  if(activeTool==='mark'){
+    const existing=markers.findIndex(m=>m.cx===cx&&m.cz===cz);
+    openMarkerEdit(cx,cz,existing);
+    return;
+  }
 }
 
 // ── EXPORT / IMPORT ──────────────────────────
 function doExport(){
-  if(!bases.length){showModal('Nothing to export','Place at least one base first.','OK',closeModal);return;}
-  const payload=bases.map(b=>({n:b.name,c:b.color,x:b.chX,z:b.chZ,ch:[...b.chunks]}));
+  if(!bases.length&&!sandwalls.size&&!markers.length){showModal('Nothing to export','Add some content first.','OK',closeModal);return;}
+  const payload={
+    bases:bases.map(b=>({n:b.name,c:b.color,x:b.chX,z:b.chZ,ch:[...b.chunks]})),
+    sand:[...sandwalls],
+    marks:markers.map(m=>({id:m.id,x:m.cx,z:m.cz,e:m.emoji,l:m.label}))
+  };
   const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   document.getElementById('m-title').textContent='Map code';
-  document.getElementById('m-sub').textContent=`${bases.length} base${bases.length!==1?'s':''} · tap to select all`;
+  document.getElementById('m-sub').textContent=`${bases.length} base${bases.length!==1?'s':''}${sandwalls.size?` · ${sandwalls.size} sandwall`:''}${markers.length?` · ${markers.length} marker${markers.length!==1?'s':''}`:''} · tap to select all`;
   document.getElementById('m-body').innerHTML=`<div class="code-box">${code}</div>`;
   const ok=document.getElementById('m-ok');ok.style.display='';ok.textContent='Copy';
   ok.onclick=()=>{navigator.clipboard.writeText(code).then(()=>{ok.textContent='Copied!';setTimeout(()=>ok.textContent='Copy',1500);}).catch(()=>{});};
@@ -765,11 +925,16 @@ function openImport(){
 function doImport(){
   const raw=(document.getElementById('importCode').value||'').trim();
   try{
-    const payload=JSON.parse(decodeURIComponent(escape(atob(raw))));
-    if(!Array.isArray(payload))throw 0;
-    bases=payload.map((d,i)=>({id:Date.now()+i+'',name:d.n||'Base',color:d.c||'#8b5cf6',chX:+d.x,chZ:+d.z,chunks:new Set(d.ch)}));
+    const parsed=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    // Support old format (array) and new format (object with bases/sand/marks)
+    const payload=Array.isArray(parsed)?{bases:parsed,sand:[],marks:[]}:parsed;
+    if(!Array.isArray(payload.bases))throw 0;
+    bases=payload.bases.map((d,i)=>({id:Date.now()+i+'',name:d.n||'Base',color:d.c||'#8b5cf6',chX:+d.x,chZ:+d.z,chunks:new Set(d.ch)}));
+    sandwalls.clear();(payload.sand||[]).forEach(k=>sandwalls.add(k));
+    markers=(payload.marks||[]).map(m=>({id:m.id||''+Date.now(),cx:+m.x,cz:+m.z,emoji:m.e||'📍',label:m.l||''}));
     active=null;placing=null;closeModal();setTool('pan');
     if(bases.length){let minX=CW,maxX=0,minZ=CH,maxZ=0;for(const b of bases)for(const k of b.chunks){const[cx,cz]=UK(k);minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);minZ=Math.min(minZ,cz);maxZ=Math.max(maxZ,cz);}const sp=Math.max(maxX-minX+4,maxZ-minZ+4);scale=Math.min(cv.width/(sp*TILE),cv.height/(sp*TILE),10)*.85;panX=cv.width/2-((minX+maxX)/2+.5)*TILE*scale;panY=cv.height/2-((minZ+maxZ)/2+.5)*TILE*scale;draw();}
+    else draw();
   }catch{const ta=document.getElementById('importCode');ta.classList.add('err');ta.placeholder='Invalid code';ta.value='';}
 }
 function showModal(t,s,ok,fn){
@@ -886,31 +1051,61 @@ MAP.addEventListener('wheel',e=>{
 function doZoom(f){panX=cv.width/2-(cv.width/2-panX)*f;panY=cv.height/2-(cv.height/2-panY)*f;scale=Math.min(Math.max(scale*f,.05),16);draw();}
 
 // ── TOUCH EVENTS ─────────────────────────────
-let touchMoved=false,tSX=0,tSY=0;
+let touchMoved=false, tSX=0, tSY=0;
+let pinching=false, pinchMidX=0, pinchMidY=0;
+
 MAP.addEventListener('touchstart',e=>{
-  if(e.touches.length===1){tSX=e.touches[0].clientX;tSY=e.touches[0].clientY;lx=tSX;ly=tSY;touchMoved=false;}
-  else if(e.touches.length===2){lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
+  if(e.touches.length===1){
+    pinching=false;
+    tSX=e.touches[0].clientX; tSY=e.touches[0].clientY;
+    lx=tSX; ly=tSY; touchMoved=false;
+  } else if(e.touches.length===2){
+    pinching=true; touchMoved=true;
+    lastDist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    const r=MAP.getBoundingClientRect();
+    pinchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2 - r.left;
+    pinchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2 - r.top;
+  }
 },{passive:true});
+
 MAP.addEventListener('touchmove',e=>{
   e.preventDefault();
-  if(e.touches.length===1){
-    const dx=e.touches[0].clientX-lx,dy=e.touches[0].clientY-ly;
-    if(Math.abs(dx)>3||Math.abs(dy)>3)touchMoved=true;
-    panX+=dx;panY+=dy;lx=e.touches[0].clientX;ly=e.touches[0].clientY;draw();
-  } else if(e.touches.length===2){
-    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const mid={x:(e.touches[0].clientX+e.touches[1].clientX)/2,y:(e.touches[0].clientY+e.touches[1].clientY)/2};
-    const r=MAP.getBoundingClientRect(),mx=mid.x-r.left,my=mid.y-r.top;
-    const f=dist/lastDist;panX=mx-(mx-panX)*f;panY=my-(my-panY)*f;
-    scale=Math.min(Math.max(scale*f,.05),16);lastDist=dist;touchMoved=true;draw();
+  if(e.touches.length===2){
+    pinching=true; touchMoved=true;
+    const dist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    const r=MAP.getBoundingClientRect();
+    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2 - r.left;
+    const my=(e.touches[0].clientY+e.touches[1].clientY)/2 - r.top;
+    // pan from mid movement
+    panX+=mx-pinchMidX; panY+=my-pinchMidY;
+    // zoom toward mid
+    const f=dist/lastDist;
+    panX=mx-(mx-panX)*f; panY=my-(my-panY)*f;
+    scale=Math.min(Math.max(scale*f,.05),16);
+    lastDist=dist; pinchMidX=mx; pinchMidY=my;
+    draw();
+  } else if(e.touches.length===1&&!pinching){
+    const dx=e.touches[0].clientX-lx, dy=e.touches[0].clientY-ly;
+    if(Math.abs(dx)>3||Math.abs(dy)>3) touchMoved=true;
+    panX+=dx; panY+=dy;
+    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+    draw();
   }
 },{passive:false});
+
 MAP.addEventListener('touchend',e=>{
-  if(e.changedTouches.length===1&&!touchMoved){
+  if(e.touches.length===0) pinching=false;
+  if(e.changedTouches.length===1&&!touchMoved&&!pinching){
     const r=MAP.getBoundingClientRect(),ts=TILE*scale;
     const cx=Math.floor((e.changedTouches[0].clientX-r.left-panX)/ts);
     const cz=Math.floor((e.changedTouches[0].clientY-r.top-panY)/ts);
-    if(cx>=0&&cx<CW&&cz>=0&&cz<CH)handleTap(cx,cz);
+    if(cx>=0&&cx<CW&&cz>=0&&cz<CH) handleTap(cx,cz);
   }
 },{passive:true});
 
