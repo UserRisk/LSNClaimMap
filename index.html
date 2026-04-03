@@ -148,6 +148,7 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
 </head>
 <body>
 
+<!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
@@ -159,12 +160,12 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
       <button class="auth-tab" id="tab-reg" onclick="switchTab('register')">Register</button>
     </div>
     <div id="form-login">
-      <div class="auth-field"><label>Email</label><input id="l-user" type="email" placeholder="email@example.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Username</label><input id="l-user" type="text" placeholder="username" autocomplete="username"></div>
       <div class="auth-field"><label>Password</label><input id="l-pass" type="password" placeholder="password" autocomplete="current-password"></div>
       <button class="auth-btn" onclick="doLogin()">Login</button>
     </div>
     <div id="form-reg" style="display:none">
-      <div class="auth-field"><label>Email</label><input id="r-user" type="email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="choose username" autocomplete="username"></div>
       <div class="auth-field"><label>Password</label><input id="r-pass" type="password" placeholder="password" autocomplete="new-password"></div>
       <div class="auth-field"><label>Confirm Password</label><input id="r-pass2" type="password" placeholder="repeat password" autocomplete="new-password"></div>
       <button class="auth-btn" onclick="doRegister()">Request Access</button>
@@ -173,6 +174,7 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
   </div>
 </div>
 
+<!-- ADMIN PANEL -->
 <div id="admin-panel">
   <div class="admin-bar">
     <span class="title">Admin Panel</span><span class="sp"></span>
@@ -191,6 +193,7 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div id="user-chip">
     <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="var(--accent)" stroke-width="1.6"/><path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -279,7 +282,7 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
 <script>
 // ═══ CONFIG ═══════════════════════════════════════
 const ADMIN_USER='Risk';
-const ADMIN_PASS_HASH='r1skx_2025'; 
+const ADMIN_PASS_HASH='r1skx_2025'; // will be hashed on use
 const USERS_KEY='lsn-users-v2';
 const SESSION_KEY='lsn-session-v2';
 
@@ -326,201 +329,194 @@ async function doRegister(){
   const pass=document.getElementById('r-pass').value;
   const pass2=document.getElementById('r-pass2').value;
   if(!user||!pass||!pass2){showMsg('Fill in all fields.');return;}
-  if(user.length < 3){showMsg('Email too short.');return;}
+  if(user.length<3){showMsg('Username must be at least 3 characters.');return;}
+  if(user.toLowerCase()===ADMIN_USER.toLowerCase()){showMsg('That username is reserved.');return;}
+  if(pass.length<6){showMsg('Password must be at least 6 characters.');return;}
   if(pass!==pass2){showMsg('Passwords do not match.');return;}
+  if(!/^[a-zA-Z0-9_\-]+$/.test(user)){showMsg('Username: letters, numbers, _ and - only.');return;}
   const users=await getUsers();
-  if(users[user.toLowerCase()] || user.toLowerCase()===ADMIN_USER.toLowerCase()){showMsg('Account already exists.');return;}
-  const h=await hashPass(pass);
-  users[user.toLowerCase()]={username:user,hash:h,status:'pending',ts:Date.now()};
+  if(users[user.toLowerCase()]){showMsg('Username already taken.');return;}
+  const hash=await hashPass(pass);
+  users[user.toLowerCase()]={username:user,hash,status:'pending',registered:new Date().toISOString()};
   await setUsers(users);
-  showMsg('Access request sent. Contact Risk for approval.','ok');
+  showMsg('Request sent! Risk will review your application and approve you.','ok');
+  document.getElementById('r-user').value='';document.getElementById('r-pass').value='';document.getElementById('r-pass2').value='';
+}
+
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(curTab==='login')doLogin();else doRegister();});
+
+// ═══ ENTER APP ════════════════════════════════════
+let _currentRole='user';
+function enterApp(username,role){
+  _currentRole=role;
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('admin-panel').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('uc-name').textContent=username;
+  if(role==='admin')document.getElementById('uc-admin-btn').style.display='';
 }
 
 async function doLogout(){await setSession(null);location.reload();}
+function openAdminPanel(){document.getElementById('admin-panel').style.display='flex';renderAdmin();}
+function closeAdmin(){document.getElementById('admin-panel').style.display='none';}
 
-// ═══ APP LOGIC ════════════════════════════════════
-const TILE=16;
-let scale=0.4, panX=0, panY=0;
-let bases=[], markers=[], sandwalls=[];
-let activeBaseId=null, tool='pan', curColor='#8b5cf6';
-let MAP, CV, CTX;
+// ═══ ADMIN ════════════════════════════════════════
+async function renderAdmin(){
+  const users=await getUsers();
+  const pending=Object.values(users).filter(u=>u.status==='pending');
+  const all=Object.values(users);
+  const pEl=document.getElementById('pending-list');
+  pEl.innerHTML=pending.length===0?'<div style="padding:14px;font-size:12px;color:var(--sub)">No pending requests</div>':
+    pending.map(u=>`<div class="user-row"><div class="u-av">${u.username[0].toUpperCase()}</div><div class="u-info"><div class="u-name">${u.username}</div><div class="u-meta">Registered ${new Date(u.registered).toLocaleDateString()}</div></div><span class="u-badge bp">Pending</span><div class="u-acts"><button class="uact approve" onclick="approveUser('${u.username.toLowerCase()}')">Approve</button><button class="uact reject" onclick="rejectUser('${u.username.toLowerCase()}')">Reject</button></div></div>`).join('');
+  const aEl=document.getElementById('all-users-list');
+  aEl.innerHTML=all.length===0?'<div style="padding:14px;font-size:12px;color:var(--sub)">No registered users</div>':
+    all.map(u=>`<div class="user-row"><div class="u-av">${u.username[0].toUpperCase()}</div><div class="u-info"><div class="u-name">${u.username}</div><div class="u-meta">${new Date(u.registered).toLocaleDateString()} · ${u.status}</div></div><span class="u-badge ${u.status==='approved'?'ba':u.status==='rejected'?'br-badge':'bp'}">${u.status}</span>${u.status==='approved'?`<div class="u-acts"><button class="uact reject" onclick="rejectUser('${u.username.toLowerCase()}')">Revoke</button></div>`:u.status==='rejected'?`<div class="u-acts"><button class="uact approve" onclick="approveUser('${u.username.toLowerCase()}')">Re-approve</button></div>`:''}</div>`).join('');
+}
+async function approveUser(k){const u=await getUsers();if(u[k]){u[k].status='approved';await setUsers(u);}renderAdmin();}
+async function rejectUser(k){const u=await getUsers();if(u[k]){u[k].status='rejected';await setUsers(u);}renderAdmin();}
 
-const COLORS=['#8b5cf6','#ef4444','#4ade80','#fb923c','#c9934a','#38bdf8','#f472b6','#94a3b8'];
-
-async function checkSession(){
+// ═══ SESSION CHECK ════════════════════════════════
+async function init(){
   const s=await getSession();
-  if(s && (Date.now()-s.ts < 86400000*7)){
-    enterApp(s.username,s.role);
-  }
+  if(!s)return;
+  if(Date.now()-s.ts>7*24*60*60*1000){await setSession(null);return;}
+  if(s.role==='admin'){enterApp(s.username,'admin');return;}
+  const users=await getUsers();const u=users[s.username.toLowerCase()];
+  if(!u||u.status!=='approved'){await setSession(null);return;}
+  enterApp(s.username,'user');
 }
+init();
 
-function enterApp(name,role){
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('uc-name').textContent=name;
-  if(role==='admin')document.getElementById('uc-admin-btn').style.display='block';
-  initMap();
-  loadData();
-}
+// ═══════════════════════════════════════════════════
+// MAP ENGINE
+// ═══════════════════════════════════════════════════
+const cv=document.getElementById('cv-el');
+const ctx=cv.getContext('2d');
+const MAP=document.getElementById('map-el');
+const CW=120,CH=120,TILE=7,BZONE=7;
+let scale=1,panX=0,panY=0,dragging=false,lx=0,ly=0,hcx=-1,hcz=-1;
+let lastDist=0,pinching=false,pmx=0,pmy=0,activeTool='pan';
+let bases=[],active=null,placing=null,selCol='#8b5cf6';
+const sandwalls=new Set();let markers=[];
+const COLORS=['#8b5cf6','#f87171','#60a5fa','#4ade80','#fb923c','#f472b6','#34d399','#fbbf24'];
+const TOOL_IDS={pan:'fbPan',place:'fbPlace',edit:'fbEdit',sand:'fbSand',mark:'fbMark'};
+const MARKER_EMOJIS=['📍','⚔️','🏰','💀','⚠️','🌊','🔥','🌲','🏠','⛏️','🛡️','👁️','❌','✅','⭐','🗺️'];
 
-function initMap(){
-  MAP=document.getElementById('map-el');
-  CV=document.getElementById('cv-el');
-  CTX=CV.getContext('2d');
-  resize();
-  window.addEventListener('resize',resize);
-  panX=CV.width/2; panY=CV.height/2;
-  
-  const sw=document.getElementById('d-sw');
-  sw.innerHTML='';
-  COLORS.forEach(c=>{
-    const d=document.createElement('div');
-    d.className='sw'; d.style.background=c;
-    if(c===curColor)d.classList.add('on');
-    d.onclick=()=>{curColor=c; [...sw.children].forEach(x=>x.classList.remove('on')); d.classList.add('on'); document.getElementById('colorDot').style.background=c;};
-    sw.appendChild(d);
-  });
-  document.getElementById('colorDot').style.background=curColor;
-  
-  draw();
-}
+function buildSwatches(id){const el=document.getElementById(id);if(!el)return;el.innerHTML='';COLORS.forEach(c=>{const d=document.createElement('div');d.className='sw'+(c===selCol?' on':'');d.dataset.c=c;d.style.background=c;d.onclick=()=>{document.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));document.querySelectorAll(`.sw[data-c="${c}"]`).forEach(x=>x.classList.add('on'));selCol=c;updateColorDot();};el.appendChild(d);});}
+buildSwatches('d-sw');
+function updateColorDot(){const d=document.getElementById('colorDot');if(d)d.style.background=selCol;}
+updateColorDot();
 
-function resize(){
-  CV.width=MAP.clientWidth; CV.height=MAP.clientHeight;
-  draw();
-}
+function setTool(t){activeTool=t;Object.entries(TOOL_IDS).forEach(([k,id])=>{const el=document.getElementById(id);if(!el)return;el.className='fab'+(k===t?t==='sand'?' sand-on':t==='mark'?' mark-on':' on':'');});MAP.classList.toggle('no-drag',t!=='pan');if(t!=='place')placing=null;if(t==='edit'&&!active&&bases.length)active=bases[bases.length-1];refreshSidebar();updateBadge();draw();}
+function onFbPlace(){if(window.innerWidth<=640){showSheet('new',Array.from(document.querySelectorAll('.tab-btn'))[0]);}else{const i=document.getElementById('nameIn');if(i){i.focus();i.select();}}}
+
+const K=(x,z)=>`${x},${z}`;
+const UK=s=>s.split(',').map(Number);
+const PX=cx=>Math.floor(panX+cx*TILE*scale);
+const PZ=cz=>Math.floor(panY+cz*TILE*scale);
+const PW=cx=>PX(cx+1)-PX(cx);
+const PH=cz=>PZ(cz+1)-PZ(cz);
+
+function adj(cx,cz,set){return set.has(K(cx-1,cz))||set.has(K(cx+1,cz))||set.has(K(cx,cz-1))||set.has(K(cx,cz+1));}
+function connected(set){if(set.size<=1)return true;const sv=set.values().next().value,vis=new Set([sv]),q=[sv];while(q.length){const[x,z]=UK(q.shift());for(const[nx,nz]of[[x-1,z],[x+1,z],[x,z-1],[x,z+1]]){const k=K(nx,nz);if(set.has(k)&&!vis.has(k)){vis.add(k);q.push(k);}}}return vis.size===set.size;}
+function tooClose(cx,cz,ownId){for(const b of bases){if(b.id===ownId)continue;for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if(b.chunks.has(K(cx+dx,cz+dz)))return true;}return false;}
+function borderCount(cx,cz){let n=0;if(cx<BZONE)n++;if(cx>=CW-BZONE)n++;if(cz<BZONE)n++;if(cz>=CH-BZONE)n++;return n;}
+const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?25:b===1?36:49;};
+const PRICES=[0,0,1000,2828,5196,8000,11180,14697,18520,22627,27000,31623,36483,41569,46872,52383,58095,64000,70093,76368,82819,89443,96234,103189,110304,117576];
+for(let n=26;n<=49;n++)PRICES.push(Math.round(Math.pow(n-1,1.5)*200)*5);
+const totalCost=n=>{let t=0;for(let i=1;i<=Math.min(n,PRICES.length-1);i++)t+=PRICES[i];return t;};
+const nextCost=n=>{const i=n+1;return i<PRICES.length?PRICES[i]:PRICES[PRICES.length-1];};
+const fmt=n=>{if(n===0)return'Free';if(n>=1e6)return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';return''+n;};
 
 function draw(){
-  if(!CTX)return;
-  CTX.clearRect(0,0,CV.width,CV.height);
-  CTX.save();
-  CTX.translate(panX,panY);
-  CTX.scale(scale,scale);
-
-  // Draw Grid
-  const step=TILE*16;
-  const xStart=Math.floor((-panX/scale)/step)*step;
-  const xEnd=Math.ceil(((CV.width-panX)/scale)/step)*step;
-  const yStart=Math.floor((-panY/scale)/step)*step;
-  const yEnd=Math.ceil(((CV.height-panY)/scale)/step)*step;
-
-  CTX.strokeStyle='rgba(255,255,255,0.04)';
-  CTX.lineWidth=1/scale;
-  for(let x=xStart;x<=xEnd;x+=step){CTX.beginPath();CTX.moveTo(x,yStart);CTX.lineTo(x,yEnd);CTX.stroke();}
-  for(let y=yStart;y<=yEnd;y+=step){CTX.beginPath();CTX.moveTo(xStart,y);CTX.lineTo(xEnd,y);CTX.stroke();}
-
-  // Draw Bases & Claims
-  bases.forEach(b=>{
-    CTX.fillStyle=b.color+'33';
-    b.chunks.forEach(c=>{
-      CTX.fillRect(c.x*TILE,c.z*TILE,TILE,TILE);
-    });
-    if(b.chest){
-      CTX.fillStyle=b.color;
-      CTX.fillRect(b.chest.x*TILE+2,b.chest.z*TILE+2,TILE-4,TILE-4);
-    }
-  });
-
-  // Draw Sandwalls
-  CTX.fillStyle='#c9934a88';
-  sandwalls.forEach(s=>{
-    CTX.fillRect(s.x*TILE,s.z*TILE,TILE,TILE);
-  });
-
-  // Draw Markers
-  markers.forEach(m=>{
-    CTX.fillStyle=m.color;
-    CTX.beginPath();
-    CTX.arc(m.x*TILE+TILE/2,m.z*TILE+TILE/2,TILE/3,0,Math.PI*2);
-    CTX.fill();
-  });
-
-  CTX.restore();
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const ts=TILE*scale,mw=CW*ts,mh=CH*ts;
+  const x0=Math.max(0,Math.floor(-panX/ts)),z0=Math.max(0,Math.floor(-panY/ts));
+  const x1=Math.min(CW,Math.ceil((cv.width-panX)/ts)),z1=Math.min(CH,Math.ceil((cv.height-panY)/ts));
+  ctx.fillStyle='#fff';ctx.fillRect(panX,panY,mw,mh);
+  const bz=BZONE*ts;ctx.fillStyle='#fff5f5';
+  ctx.fillRect(panX,panY,mw,bz);ctx.fillRect(panX,panY+mh-bz,mw,bz);ctx.fillRect(panX,panY,bz,mh);ctx.fillRect(panX+mw-bz,panY,bz,mh);
+  ctx.strokeStyle='#ebebeb';ctx.lineWidth=1;
+  for(let i=x0;i<=x1;i++){const p=PX(i);ctx.beginPath();ctx.moveTo(p,PZ(z0));ctx.lineTo(p,PZ(z1));ctx.stroke();}
+  for(let i=z0;i<=z1;i++){const p=PZ(i);ctx.beginPath();ctx.moveTo(PX(x0),p);ctx.lineTo(PX(x1),p);ctx.stroke();}
+  ctx.strokeStyle='#d5d5d5';
+  for(let i=Math.floor(x0/10)*10;i<=x1;i+=10){const p=PX(i);ctx.beginPath();ctx.moveTo(p,PZ(z0));ctx.lineTo(p,PZ(z1));ctx.stroke();}
+  for(let i=Math.floor(z0/10)*10;i<=z1;i+=10){const p=PZ(i);ctx.beginPath();ctx.moveTo(PX(x0),p);ctx.lineTo(PX(x1),p);ctx.stroke();}
+  if(placing||activeTool==='edit'){const ownId=active?active.id:null;for(const b of bases){if(b.id===ownId)continue;for(const k of b.chunks){const[cx,cz]=UK(k);for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){if(!dx&&!dz)continue;const nx=cx+dx,nz=cz+dz;if(nx<0||nx>=CW||nz<0||nz>=CH)continue;if(b.chunks.has(K(nx,nz)))continue;if(ownId&&active&&active.chunks.has(K(nx,nz)))continue;if(!bases.some(bb=>bb.id!==b.id&&bb.chunks.has(K(nx,nz)))){ctx.fillStyle='#fce8e8';ctx.fillRect(PX(nx),PZ(nz),PW(nx),PH(nz));}}}}}
+  for(const b of bases){const dr=parseInt(b.color.slice(1,3),16),dg=parseInt(b.color.slice(3,5),16),db=parseInt(b.color.slice(5,7),16);const fill=`rgb(${Math.round(dr*.18+255*.82)},${Math.round(dg*.18+255*.82)},${Math.round(db*.18+255*.82)})`;for(const k of b.chunks){const[cx,cz]=UK(k);ctx.fillStyle=fill;ctx.fillRect(PX(cx),PZ(cz),PW(cx),PH(cz));}}
+  const owner=new Map();for(const b of bases)for(const k of b.chunks)owner.set(k,b.id);
+  const BW=Math.max(1,Math.min(3,Math.round(scale*1.2)));
+  for(const b of bases){ctx.fillStyle=b.color;for(const k of b.chunks){const[cx,cz]=UK(k);const x1=PX(cx),y1=PZ(cz),x2=PX(cx+1),y2=PZ(cz+1);const w=x2-x1,h=y2-y1;if(w<=0||h<=0)continue;const bw=Math.min(BW,Math.floor(w/2),Math.floor(h/2));const nT=owner.get(K(cx,cz-1)),nB=owner.get(K(cx,cz+1)),nL=owner.get(K(cx-1,cz)),nR=owner.get(K(cx+1,cz));if(!nT||nT===b.id)ctx.fillRect(x1,y1,w,bw);if(!nB||nB===b.id)ctx.fillRect(x1,y2-bw,w,bw);if(!nL||nL===b.id)ctx.fillRect(x1,y1,bw,h);if(!nR||nR===b.id)ctx.fillRect(x2-bw,y1,bw,h);}
+    const cpx=PX(b.chX)+PW(b.chX)/2,cpz=PZ(b.chZ)+PH(b.chZ)/2;const cr=Math.max(3,Math.min(8,TILE*scale*.3));ctx.fillStyle=b.color;ctx.fillRect(Math.round(cpx-cr),Math.round(cpz-cr),Math.round(cr*2),Math.round(cr*2));
+    if(scale>0.6){const fs=Math.max(9,Math.min(13,TILE*scale*.48));ctx.font=`600 ${fs}px Inter,sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';const tw=ctx.measureText(b.name).width+10;ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(Math.round(cpx-tw/2),Math.round(cpz-cr-fs-3),Math.round(tw),Math.round(fs+3));ctx.fillStyle=b.color;ctx.fillText(b.name,cpx,cpz-cr-2);ctx.textBaseline='alphabetic';}}
+  for(const k of sandwalls){const[cx,cz]=UK(k);const sx=PX(cx),sy=PZ(cz),sw=PW(cx),sh=PH(cz);if(sw<=0||sh<=0)continue;ctx.fillStyle='#f5e9d0';ctx.fillRect(sx,sy,sw,sh);ctx.save();ctx.beginPath();ctx.rect(sx,sy,sw,sh);ctx.clip();ctx.strokeStyle='#c9934a';ctx.lineWidth=1.2;const step=Math.max(5,sw/2.5);for(let s=-(sh+sw);s<sw+sh+sw;s+=step){ctx.beginPath();ctx.moveTo(sx+s,sy);ctx.lineTo(sx+s+sh*1.2,sy+sh);ctx.stroke();}ctx.restore();const sb=Math.max(1,Math.min(2,Math.round(scale)));ctx.fillStyle='#c9934a';ctx.fillRect(sx,sy,sw,sb);ctx.fillRect(sx,sy+sh-sb,sw,sb);ctx.fillRect(sx,sy,sb,sh);ctx.fillRect(sx+sw-sb,sy,sb,sh);}
+  if(markers.length&&scale>0.28){for(const m of markers){const cpx=PX(m.cx)+PW(m.cx)/2,cpy=PZ(m.cz)+PH(m.cz)/2;const fs=Math.max(11,Math.min(20,TILE*scale*.65));ctx.font=`${fs}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(m.emoji,cpx,cpy);if(scale>0.75&&m.label){const lfs=Math.max(8,Math.min(11,TILE*scale*.36));ctx.font=`600 ${lfs}px Inter,sans-serif`;ctx.textBaseline='top';const tw=ctx.measureText(m.label).width+8;const lx2=Math.round(cpx-tw/2),ly2=Math.round(cpy+fs/2+3);ctx.fillStyle='rgba(15,15,17,.88)';if(ctx.roundRect){ctx.beginPath();ctx.roundRect(lx2,ly2,Math.round(tw),lfs+4,3);ctx.fill();}else ctx.fillRect(lx2,ly2,Math.round(tw),lfs+4);ctx.fillStyle='#fff';ctx.fillText(m.label,cpx,ly2+2);ctx.textBaseline='alphabetic';}}ctx.textBaseline='alphabetic';}
+  if(hcx>=0&&hcz>=0){const k=K(hcx,hcz);if(placing){const bad=bases.some(b=>b.chunks.has(k))||tooClose(hcx,hcz,null);ctx.fillStyle=bad?'#fee2e2':'#fef9c3';ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));ctx.strokeStyle=bad?'#ef4444':'#f59e0b';ctx.lineWidth=2;ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);}else if(activeTool==='edit'&&active){const has=active.chunks.has(k);const full=active.chunks.size>=maxC(active.chX,active.chZ);const can=!full&&adj(hcx,hcz,active.chunks)&&!tooClose(hcx,hcz,active.id);const dr=parseInt(active.color.slice(1,3),16),dg=parseInt(active.color.slice(3,5),16),db=parseInt(active.color.slice(5,7),16);ctx.fillStyle=has?'#fee2e2':can?`rgb(${Math.round(dr*.3+255*.7)},${Math.round(dg*.3+255*.7)},${Math.round(db*.3+255*.7)})`:'#fce8e8';ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));ctx.strokeStyle=has?'#ef4444':can?active.color:'#fca5a5';ctx.lineWidth=2;ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);}else if(activeTool==='sand'){const hs=sandwalls.has(k);ctx.fillStyle=hs?'#fee2e2':'rgba(201,147,74,.2)';ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));ctx.strokeStyle=hs?'#ef4444':'#c9934a';ctx.lineWidth=2;ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);}else if(activeTool==='mark'){ctx.fillStyle='rgba(99,102,241,.12)';ctx.fillRect(PX(hcx),PZ(hcz),PW(hcx),PH(hcz));ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.strokeRect(PX(hcx)+1,PZ(hcz)+1,PW(hcx)-2,PH(hcz)-2);}}
+  const ts2=TILE*scale,r2=document.getElementById('ring-el');r2.style.cssText=`left:${panX}px;top:${panY}px;width:${CW*ts2}px;height:${CH*ts2}px`;
 }
 
-// ═══ INPUT HANDLING ══════════════════════════════
-let isDown=false, lx, ly, pmx, pmy, lastDist, pinching=false, touchMoved=false;
+function acardHTML(){if(!active)return'';const max=maxC(active.chX,active.chZ),used=active.chunks.size,left=max-used;const bn=borderCount(active.chX,active.chZ);const loc=bn>=2?'2 borders':bn===1?'1 border':'Open';const nc=left>0?nextCost(used):null;const lc=left>5?'g':left>0?'a':'r';return`<div class="acard"><div class="acard-head"><div class="acard-dot" style="background:${active.color}"></div><div class="acard-name">${active.name}</div></div><div class="acard-body"><div class="srow"><span>Chunks</span><span>${used} / ${max}</span></div><div class="srow"><span>Remaining</span><span><span class="pill ${lc}">${left} left</span></span></div><div class="srow"><span>Spent</span><span>${fmt(totalCost(used))} coins</span></div>${nc!=null?`<div class="srow"><span>Next chunk</span><span><span class="pill a">${fmt(nc)}</span></span></div>`:''}<div class="srow"><span>Location</span><span><span class="pill ${bn>0?'r':'g'}">${loc}</span></span></div></div><div class="acard-act"><button class="btn ghost" onclick="deselect()" style="font-size:11px">Done</button><button class="btn danger" onclick="deleteActive()" style="font-size:11px">Delete</button></div></div>`;}
+function baseListHTML(){if(!bases.length)return'<div class="empty">No bases yet</div>';return bases.map(b=>{const max=maxC(b.chX,b.chZ),bn=borderCount(b.chX,b.chZ);const lc=bn>=2?'r':bn===1?'a':'g';const loc=bn>=2?'2B':bn===1?'1B':'Open';const sel=active&&active.id===b.id?' sel':'';return`<div class="brow${sel}" onclick="selectBase('${b.id}')"><div class="brow-strip" style="background:${b.color}"></div><div class="brow-info"><div class="brow-name" style="color:${b.color}">${b.name}</div><div class="brow-pills"><span class="pill p">${b.chunks.size}/${max}</span><span class="pill ${lc}">${loc}</span><span class="pill s">${fmt(totalCost(b.chunks.size))}</span></div></div><div class="brow-del" onclick="event.stopPropagation();removeBase('${b.id}')">x</div></div>`;}).join('');}
+function refreshSidebar(){const da=document.getElementById('d-active');if(active){da.style.display='';const ac=document.getElementById('d-acard');if(ac)ac.innerHTML=acardHTML();}else da.style.display='none';const dl=document.getElementById('d-list');if(dl)dl.innerHTML=baseListHTML();updateBadge();}
+function updateBadge(){const b=document.getElementById('chip-mode');if(!b)return;if(placing){b.style.color='#fb923c';b.textContent='Click to place chest';}else if(activeTool==='edit'&&active){b.style.color=active.color;const l=maxC(active.chX,active.chZ)-active.chunks.size;b.textContent=`${active.name} · L=claim  R=remove  (${l} left)`;}else if(activeTool==='sand'){b.style.color='#c9934a';b.textContent='Sandwall · L=add  R=remove';}else if(activeTool==='mark'){b.style.color='#818cf8';b.textContent='Marker · L=place  R=remove';}else{b.style.color='#6b6b80';b.textContent='Pan & zoom';}}
 
-MAP.addEventListener('mousedown',e=>{
-  isDown=true; lx=e.clientX; ly=e.clientY;
-  if(tool!=='pan' && e.button===0) handleMapClick(e);
-});
+function startChest(){const name=(document.getElementById('nameIn').value.trim()||`Base ${bases.length+1}`).slice(0,16);placing={name,color:selCol};active=null;activeTool='place';Object.entries(TOOL_IDS).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.className='fab'+(k==='place'?' on':'');});MAP.classList.add('no-drag');refreshSidebar();updateBadge();draw();}
+function deselect(){active=null;placing=null;setTool('pan');}
+function deleteActive(){if(!active)return;bases=bases.filter(b=>b.id!==active.id);active=null;placing=null;setTool('pan');}
+function removeBase(id){bases=bases.filter(b=>b.id!==id);if(active&&active.id===id){active=null;setTool('pan');}else{refreshSidebar();draw();}}
+function selectBase(id){const b=bases.find(b=>b.id===id);if(!b)return;active=b;placing=null;MAP.classList.add('no-drag');const ts=TILE*scale;panX=cv.width/2-(b.chX+.5)*ts;panY=cv.height/2-(b.chZ+.5)*ts;if(activeTool==='pan')setTool('edit');else{refreshSidebar();updateBadge();draw();}}
 
-MAP.addEventListener('mousemove',e=>{
-  const r=MAP.getBoundingClientRect();
-  const mx=(e.clientX-r.left-panX)/scale, my=(e.clientY-r.top-panY)/scale;
-  const cx=Math.floor(mx/TILE), cz=Math.floor(my/TILE);
-  document.getElementById('hx').textContent=cx*16;
-  document.getElementById('hz').textContent=cz*16;
+const anims=[];
+function spawnRemoveAnim(cx,cz,color){const cpx=PX(cx)+PW(cx)/2,cpz=PZ(cz)+PH(cz)/2;const p=[];for(let i=0;i<16;i++){const angle=(i/16)*Math.PI*2+Math.random()*.3,speed=1.5+Math.random()*3;p.push({x:cpx,y:cpz,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,size:2+Math.random()*4,color,life:0,maxLife:22+Math.floor(Math.random()*12)});}anims.push({type:'burst',particles:p,done:false});runAnims();}
+function spawnAddAnim(cx,cz,color){anims.push({type:'pulse',cx,cz,color,t:0,maxT:18,done:false});runAnims();}
+let animRaf=null;
+function runAnims(){if(animRaf)return;animRaf=requestAnimationFrame(stepAnims);}
+function stepAnims(){animRaf=null;let any=false;draw();for(const a of anims){if(a.done)continue;any=true;if(a.type==='burst'){let alive=false;for(const p of a.particles){if(p.life>=p.maxLife)continue;alive=true;p.x+=p.vx;p.y+=p.vy;p.vy+=.18;p.vx*=.88;p.vy*=.88;p.life++;const fade=1-p.life/p.maxLife;const dr=parseInt(p.color.slice(1,3),16),dg=parseInt(p.color.slice(3,5),16),db=parseInt(p.color.slice(5,7),16);ctx.fillStyle=`rgb(${Math.round(dr+(255-dr)*(1-fade))},${Math.round(dg+(255-dg)*(1-fade))},${Math.round(db+(255-db)*(1-fade))})`;const s=Math.ceil(p.size*(1-p.life/p.maxLife*.5));ctx.fillRect(Math.round(p.x-s/2),Math.round(p.y-s/2),s,s);}if(!alive)a.done=true;}if(a.type==='pulse'){a.t++;if(a.t>=a.maxT){a.done=true;continue;}const prog=a.t/a.maxT,ts=TILE*scale;const x=PX(a.cx),z=PZ(a.cz),w=PW(a.cx),h=PH(a.cz);const expand=prog*ts*.5;const dr=parseInt(a.color.slice(1,3),16),dg=parseInt(a.color.slice(3,5),16),db=parseInt(a.color.slice(5,7),16);const fade=1-prog;ctx.strokeStyle=`rgb(${Math.round(dr+(255-dr)*(1-fade))},${Math.round(dg+(255-dg)*(1-fade))},${Math.round(db+(255-db)*(1-fade))})`;ctx.lineWidth=Math.max(1,(1-prog)*3);ctx.strokeRect(x-expand,z-expand,w+expand*2,h+expand*2);}}for(let i=anims.length-1;i>=0;i--)if(anims[i].done)anims.splice(i,1);if(any)animRaf=requestAnimationFrame(stepAnims);}
 
-  if(isDown && tool==='pan'){
-    panX+=e.clientX-lx; panY+=e.clientY-ly;
-    lx=e.clientX; ly=e.clientY;
-    draw();
-  }
-});
+function handleTap(cx,cz,isRight){
+  const k=K(cx,cz);
+  if(placing&&!isRight){if(bases.some(b=>b.chunks.has(k))||tooClose(cx,cz,null))return;const nb={id:''+Date.now(),name:placing.name,color:placing.color,chX:cx,chZ:cz,chunks:new Set([k])};bases.push(nb);active=nb;placing=null;const inp=document.getElementById('nameIn');if(inp)inp.value='';activeTool='edit';Object.entries(TOOL_IDS).forEach(([k2,id])=>{const el=document.getElementById(id);if(el)el.className='fab'+(k2==='edit'?' on':'');});spawnAddAnim(cx,cz,nb.color);refreshSidebar();updateBadge();return;}
+  if(activeTool==='edit'&&active){if(isRight){if(!active.chunks.has(k))return;if(cx===active.chX&&cz===active.chZ)return;const t=new Set(active.chunks);t.delete(k);if(t.size>0&&!connected(t))return;const col=active.color;active.chunks.delete(k);spawnRemoveAnim(cx,cz,col);}else{if(active.chunks.size>=maxC(active.chX,active.chZ))return;if(!adj(cx,cz,active.chunks)||tooClose(cx,cz,active.id))return;if(active.chunks.has(k))return;active.chunks.add(k);spawnAddAnim(cx,cz,active.color);}refreshSidebar();updateBadge();return;}
+  if(activeTool==='sand'){if(isRight)sandwalls.delete(k);else sandwalls.add(k);draw();return;}
+  if(activeTool==='mark'){if(isRight){const idx=markers.findIndex(m=>m.cx===cx&&m.cz===cz);if(idx>=0){markers.splice(idx,1);draw();}}else{const idx=markers.findIndex(m=>m.cx===cx&&m.cz===cz);openMarkerEdit(cx,cz,idx);}return;}
+}
 
-MAP.addEventListener('mouseup',()=>isDown=false);
-MAP.addEventListener('wheel',e=>{
-  e.preventDefault();
-  const r=MAP.getBoundingClientRect();
-  const mx=e.clientX-r.left, my=e.clientY-r.top;
-  const f=e.deltaY>0?0.9:1.1;
-  const ns=Math.min(Math.max(scale*f,0.05),16);
-  panX=mx-(mx-panX)*(ns/scale);
-  panY=my-(my-panY)*(ns/scale);
-  scale=ns;
-  draw();
-},{passive:false});
+let _pe='📍';
+function openMarkerEdit(cx,cz,existIdx){const ex=existIdx>=0?markers[existIdx]:null;_pe=ex?ex.emoji:'📍';document.getElementById('m-title').textContent=ex?'Edit Marker':'New Marker';document.getElementById('m-sub').textContent=`X${(cx-CW/2)*16} Z${(cz-CH/2)*16}`;document.getElementById('m-body').innerHTML=`<div style="margin-bottom:12px"><div class="s-lbl" style="margin-bottom:7px">Emoji</div><div class="epick" id="epick">${MARKER_EMOJIS.map(e=>`<button onclick="pickE(this,'${e}')" class="${e===_pe?'on':''}" data-e="${e}">${e}</button>`).join('')}</div></div><div class="s-lbl" style="margin-bottom:6px">Label</div><input id="mLabel" class="field" type="text" maxlength="20" placeholder="Optional label" value="${ex?ex.label:''}" style="margin-bottom:${ex?'8':'0'}px">${ex?`<button class="btn danger" onclick="delMarker(${existIdx});closeModal()">Remove marker</button>`:''}`; const ok=document.getElementById('m-ok');ok.style.display='';ok.textContent=ex?'Save':'Add';ok.onclick=()=>{const lbl=(document.getElementById('mLabel').value||'').trim().slice(0,20);if(existIdx>=0){markers[existIdx]={...markers[existIdx],emoji:_pe,label:lbl};}else markers.push({id:''+Date.now(),cx,cz,emoji:_pe,label:lbl});closeModal();draw();};document.getElementById('ov-el').classList.add('show');}
+function pickE(btn,e){_pe=e;document.querySelectorAll('#epick button').forEach(b=>{b.classList.toggle('on',b.dataset.e===e);});}
+function delMarker(idx){markers.splice(idx,1);}
 
-// Touch support logic
-MAP.addEventListener('touchstart',e=>{
-  if(e.touches.length===1){
-    isDown=true; touchMoved=false;
-    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
-  }else if(e.touches.length===2){
-    pinching=true;
-    lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const r=MAP.getBoundingClientRect();
-    pmx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left;
-    pmy=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;
-  }
-});
+function doExport(){const payload={bases:bases.map(b=>({n:b.name,c:b.color,x:b.chX,z:b.chZ,ch:[...b.chunks]})),sand:[...sandwalls],marks:markers.map(m=>({id:m.id,x:m.cx,z:m.cz,e:m.emoji,l:m.label}))};const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));document.getElementById('m-title').textContent='Map code';document.getElementById('m-sub').textContent=[bases.length&&`${bases.length} base${bases.length!==1?'s':''}`,sandwalls.size&&`${sandwalls.size} sandwall`,markers.length&&`${markers.length} marker${markers.length!==1?'s':''}`].filter(Boolean).join(' · ')||'Empty';document.getElementById('m-body').innerHTML=`<div class="code-box">${code}</div>`;const ok=document.getElementById('m-ok');ok.style.display='';ok.textContent='Copy';ok.onclick=()=>{navigator.clipboard.writeText(code).then(()=>{ok.textContent='Copied!';setTimeout(()=>ok.textContent='Copy',1500);}).catch(()=>{});};document.getElementById('ov-el').classList.add('show');}
+function openImport(){document.getElementById('m-title').textContent='Import map';document.getElementById('m-sub').textContent='Paste map code.';document.getElementById('m-body').innerHTML=`<textarea class="code-box" id="importCode" placeholder="Paste code here"></textarea>`;const ok=document.getElementById('m-ok');ok.style.display='';ok.textContent='Import';ok.onclick=doImport;document.getElementById('ov-el').classList.add('show');}
+function doImport(){const raw=(document.getElementById('importCode').value||'').trim();try{const p=JSON.parse(decodeURIComponent(escape(atob(raw))));const payload=Array.isArray(p)?{bases:p,sand:[],marks:[]}:p;if(!Array.isArray(payload.bases))throw 0;bases=payload.bases.map((d,i)=>({id:Date.now()+i+'',name:d.n||'Base',color:d.c||'#8b5cf6',chX:+d.x,chZ:+d.z,chunks:new Set(d.ch)}));sandwalls.clear();(payload.sand||[]).forEach(k=>sandwalls.add(k));markers=(payload.marks||[]).map(m=>({id:m.id||''+Date.now(),cx:+m.x,cz:+m.z,emoji:m.e||'📍',label:m.l||''}));active=null;placing=null;closeModal();setTool('pan');if(bases.length){let minX=CW,maxX=0,minZ=CH,maxZ=0;for(const b of bases)for(const k of b.chunks){const[cx,cz]=UK(k);minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);minZ=Math.min(minZ,cz);maxZ=Math.max(maxZ,cz);}const sp=Math.max(maxX-minX+4,maxZ-minZ+4);scale=Math.min(cv.width/(sp*TILE),cv.height/(sp*TILE),10)*.85;panX=cv.width/2-((minX+maxX)/2+.5)*TILE*scale;panY=cv.height/2-((minZ+maxZ)/2+.5)*TILE*scale;}refreshSidebar();draw();}catch{const ta=document.getElementById('importCode');ta.classList.add('err');ta.placeholder='Invalid code';ta.value='';}}
+function closeModal(){document.getElementById('ov-el').classList.remove('show');document.getElementById('m-ok').style.display='';}
+document.getElementById('ov-el').addEventListener('click',e=>{if(e.target.id==='ov-el')closeModal();});
+function openColorPicker(){document.getElementById('m-title').textContent='Base color';document.getElementById('m-sub').textContent='';document.getElementById('m-body').innerHTML='<div class="swatches" id="modal-sw" style="gap:7px"></div>';buildSwatches('modal-sw');const ok=document.getElementById('m-ok');ok.style.display='';ok.textContent='Done';ok.onclick=closeModal;document.getElementById('ov-el').classList.add('show');}
+function openMore(){document.getElementById('m-title').textContent='Options';document.getElementById('m-sub').textContent='';document.getElementById('m-body').innerHTML=`<button class="btn" onclick="doExport();closeModal()">Export map code</button><button class="btn" onclick="closeModal();openImport()">Import map code</button>${active?`<button class="btn ghost" onclick="deselect();closeModal()">Deselect base</button><button class="btn danger" onclick="deleteActive();closeModal()">Delete active base</button>`:''}`; document.getElementById('m-ok').style.display='none';document.getElementById('ov-el').classList.add('show');}
 
-MAP.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  if(e.touches.length===2){
-    pinching=true; touchMoved=true;
-    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const r=MAP.getBoundingClientRect();
-    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left, my=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;
-    panX+=mx-pmx; panY+=my-pmy;
-    const f=dist/lastDist;
-    panX=mx-(mx-panX)*f; panY=my-(my-panY)*f;
-    scale=Math.min(Math.max(scale*f,0.05),16);
-    lastDist=dist; pmx=mx; pmy=my;
-    draw();
-  }else if(e.touches.length===1 && !pinching){
-    const dx=e.touches[0].clientX-lx, dy=e.touches[0].clientY-ly;
-    if(Math.abs(dx)>3||Math.abs(dy)>3) touchMoved=true;
-    panX+=dx; panY+=dy;
-    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
-    draw();
-  }
-},{passive:false});
+let sheetOpen=false;const sheet=document.getElementById('sheet-el');sheet.style.transform='translateY(calc(100% - 56px))';
+function showSheet(t,btn){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');else{const tabs=Array.from(document.querySelectorAll('.tab-btn'));const idx={new:0,active:1,bases:2,save:3};const i=idx[t];if(i!=null&&tabs[i])tabs[i].classList.add('on');}const body=document.getElementById('sh-body');if(t==='new'){body.innerHTML=`<div class="s-lbl">New Base</div><input id="m-nameIn" class="field" type="text" placeholder="Base name" maxlength="16"><div class="swatches" id="m-sw" style="margin-bottom:10px"></div><button class="btn accent" onclick="startChestMobile()" style="justify-content:center">Place Claim Chest</button>`;buildSwatches('m-sw');}else if(t==='active'){body.innerHTML=active?`<div class="s-lbl">Active Base</div>${acardHTML()}`:`<div class="empty" style="margin-top:8px">No active base</div>`;}else if(t==='bases'){body.innerHTML=`<div class="s-lbl">Bases</div>${baseListHTML()}`;}else if(t==='save'){body.innerHTML=`<div class="s-lbl">Save &amp; Load</div><button class="btn" onclick="doExport()">Export code</button><button class="btn" onclick="openImport()">Import code</button>`;}if(!sheetOpen){sheetOpen=true;sheet.style.transform='translateY(0)';}}
+function startChestMobile(){const inp=document.getElementById('m-nameIn');placing={name:(inp?inp.value.trim():'')||`Base ${bases.length+1}`,color:selCol};active=null;activeTool='place';Object.entries(TOOL_IDS).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.className='fab'+(k==='place'?' on':'');});MAP.classList.add('no-drag');sheet.style.transform='translateY(calc(100% - 56px))';sheetOpen=false;refreshSidebar();updateBadge();draw();}
+let shY=0,shDrag=false,shStart=0;document.getElementById('sh-handle').addEventListener('touchstart',e=>{shDrag=true;shStart=e.touches[0].clientY;shY=sheetOpen?0:sheet.offsetHeight-56;},{passive:true});
+window.addEventListener('touchmove',e=>{if(!shDrag)return;const ny=Math.max(0,Math.min(sheet.offsetHeight-56,shY+e.touches[0].clientY-shStart));sheet.style.transition='none';sheet.style.transform=`translateY(${ny}px)`;},{passive:true});
+window.addEventListener('touchend',()=>{if(!shDrag)return;shDrag=false;const cur=parseFloat(sheet.style.transform.replace(/[^0-9.-]/g,''))||0;sheetOpen=cur<sheet.offsetHeight/2;sheet.style.transition='transform .25s ease';sheet.style.transform=sheetOpen?'translateY(0)':`translateY(calc(100% - 56px))`;shY=sheetOpen?0:sheet.offsetHeight-56;});
 
-MAP.addEventListener('touchend',e=>{
-  if(e.touches.length===0) pinching=false;
-  if(e.changedTouches.length===1 && !touchMoved && !pinching){
-    const r=MAP.getBoundingClientRect();
-    const mx=(e.changedTouches[0].clientX-r.left-panX)/scale, my=(e.changedTouches[0].clientY-r.top-panY)/scale;
-    const cx=Math.floor(mx/TILE), cz=Math.floor(my/TILE);
-    if(tool!=='pan') executeAction(cx,cz,0);
-  }
-});
+MAP.addEventListener('mousedown',e=>{if(e.button===2)return;lx=e.clientX;ly=e.clientY;if(activeTool==='pan'&&!placing)dragging=true;});
+window.addEventListener('mouseup',()=>dragging=false);
+MAP.addEventListener('contextmenu',e=>{e.preventDefault();const r=MAP.getBoundingClientRect(),ts=TILE*scale;const cx=Math.floor((e.clientX-r.left-panX)/ts),cz=Math.floor((e.clientY-r.top-panY)/ts);if(cx>=0&&cx<CW&&cz>=0&&cz<CH)handleTap(cx,cz,true);});
+MAP.addEventListener('click',e=>{const r=MAP.getBoundingClientRect(),ts=TILE*scale;const cx=Math.floor((e.clientX-r.left-panX)/ts),cz=Math.floor((e.clientY-r.top-panY)/ts);if(cx>=0&&cx<CW&&cz>=0&&cz<CH)handleTap(cx,cz,false);});
+window.addEventListener('mousemove',e=>{if(dragging){panX+=e.clientX-lx;panY+=e.clientY-ly;lx=e.clientX;ly=e.clientY;draw();}lx=e.clientX;ly=e.clientY;const r=MAP.getBoundingClientRect(),ts=TILE*scale;const rcx=(e.clientX-r.left-panX)/ts,rcz=(e.clientY-r.top-panY)/ts;const cx=Math.floor(rcx),cz=Math.floor(rcz),inM=cx>=0&&cx<CW&&cz>=0&&cz<CH;if(inM!==(hcx>=0)||cx!==hcx||cz!==hcz){hcx=inM?cx:-1;hcz=inM?cz:-1;if(!animRaf)draw();}document.getElementById('hx').textContent=Math.round((rcx-CW/2)*16);document.getElementById('hz').textContent=Math.round((rcz-CH/2)*16);const hint=document.getElementById('hint');if(active&&inM&&activeTool==='edit'){const l=maxC(active.chX,active.chZ)-active.chunks.size;hint.className=l>0?'a':'r';hint.textContent=`${l} left`;}else hint.textContent='';const tip=document.getElementById('tip-el');let hit=null;if(inM){const k=K(cx,cz);for(const b of bases){if(b.chunks.has(k)){const max=maxC(b.chX,b.chZ);hit=`<b style="color:${b.color}">${b.name}</b><br><span>${b.chunks.size}/${max} chunks | ${fmt(totalCost(b.chunks.size))} coins</span>`;break;}}if(!hit&&sandwalls.has(K(cx,cz)))hit=`<span style="color:#c9934a">Sandwall</span>`;if(!hit){const m=markers.find(m=>m.cx===cx&&m.cz===cz);if(m)hit=`${m.emoji}${m.label?` <b>${m.label}</b>`:''}`; }}if(hit){tip.style.display='block';tip.innerHTML=hit;const mr=MAP.getBoundingClientRect();tip.style.left=(e.clientX-mr.left+14)+'px';tip.style.top=(e.clientY-mr.top-8)+'px';}else tip.style.display='none';});
+MAP.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:.91,r=MAP.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;panX=mx-(mx-panX)*f;panY=my-(my-panY)*f;scale=Math.min(Math.max(scale*f,.05),16);draw();},{passive:false});
+function doZoom(f){panX=cv.width/2-(cv.width/2-panX)*f;panY=cv.height/2-(cv.height/2-panY)*f;scale=Math.min(Math.max(scale*f,.05),16);draw();}
 
-// Initialization
-checkSession();
+let touchMoved=false,tSX=0,tSY=0;
+MAP.addEventListener('touchstart',e=>{if(e.touches.length===1){pinching=false;tSX=e.touches[0].clientX;tSY=e.touches[0].clientY;lx=tSX;ly=tSY;touchMoved=false;}else if(e.touches.length===2){pinching=true;touchMoved=true;lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=MAP.getBoundingClientRect();pmx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left;pmy=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;}},{passive:true});
+MAP.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===2){pinching=true;touchMoved=true;const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=MAP.getBoundingClientRect();const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,my=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;panX+=mx-pmx;panY+=my-pmy;const f=dist/lastDist;panX=mx-(mx-panX)*f;panY=my-(my-panY)*f;scale=Math.min(Math.max(scale*f,.05),16);lastDist=dist;pmx=mx;pmy=my;draw();}else if(e.touches.length===1&&!pinching){const dx=e.touches[0].clientX-lx,dy=e.touches[0].clientY-ly;if(Math.abs(dx)>3||Math.abs(dy)>3)touchMoved=true;panX+=dx;panY+=dy;lx=e.touches[0].clientX;ly=e.touches[0].clientY;draw();}},{passive:false});
+MAP.addEventListener('touchend',e=>{if(e.touches.length===0)pinching=false;if(e.changedTouches.length===1&&!touchMoved&&!pinching){const r=MAP.getBoundingClientRect(),ts=TILE*scale;const cx=Math.floor((e.changedTouches[0].clientX-r.left-panX)/ts),cz=Math.floor((e.changedTouches[0].clientY-r.top-panY)/ts);if(cx>=0&&cx<CW&&cz>=0&&cz<CH)handleTap(cx,cz,false);}},{passive:true});
+
+function resize(){cv.width=MAP.clientWidth;cv.height=MAP.clientHeight;const fit=Math.min(cv.width/(CW*TILE),cv.height/(CH*TILE))*.88;scale=fit;panX=(cv.width-CW*TILE*scale)/2;panY=(cv.height-CH*TILE*scale)/2;draw();}
+resize();window.addEventListener('resize',resize);
+showSheet('new',document.querySelector('.tab-btn'));
 </script>
 </body>
 </html>
