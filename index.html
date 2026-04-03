@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>LSN Chunk Map - Multi-World</title>
+<title>LSN Chunk Map</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -15,258 +15,512 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .auth-box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
 .auth-logo{text-align:center;margin-bottom:24px;}
 .auth-logo .brand{font-size:22px;font-weight:700;color:var(--accent);}
+.auth-logo .sub{font-size:11px;color:var(--sub);margin-top:4px;}
 .auth-tabs{display:flex;background:var(--card);border-radius:9px;padding:3px;margin-bottom:20px;}
-.auth-tab{flex:1;padding:7px;border-radius:7px;border:none;background:none;color:var(--sub);font-size:12px;font-weight:500;cursor:pointer;}
-.auth-tab.on{background:var(--surface);color:var(--text);}
+.auth-tab{flex:1;padding:7px;border-radius:7px;border:none;background:none;color:var(--sub);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;}
+.auth-tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3);}
 .auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.auth-field label{font-size:11px;color:var(--sub);}
-.auth-field input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;outline:none;}
-.auth-btn{width:100%;padding:10px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
+.auth-field label{font-size:11px;color:var(--sub);font-weight:500;}
+.auth-field input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;outline:none;transition:border-color .15s;}
+.auth-field input:focus{border-color:var(--accent);}
+.auth-field input::placeholder{color:var(--muted);}
+.auth-btn{width:100%;padding:10px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .12s;}
+.auth-btn:hover{background:var(--accent2);}
+.auth-msg{margin-top:12px;padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.6;text-align:center;}
+.auth-msg.err{background:#200f0f;border:1px solid #3a1818;color:var(--red);}
+.auth-msg.ok{background:#0f2010;border:1px solid #1a3a1a;color:var(--green);}
+.auth-msg.warn{background:#1f1508;border:1px solid #3a2510;color:var(--orange);}
 
-/* ADMIN PANEL */
+/* ADMIN */
 #admin-panel{position:fixed;inset:0;z-index:900;background:var(--bg);display:none;flex-direction:column;}
-.admin-bar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;}
+.admin-bar{height:52px;min-height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;}
 .admin-bar .title{font-size:14px;font-weight:700;color:var(--accent);}
-.admin-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+.admin-bar .sp{flex:1;}
+.admin-bar button{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;transition:all .1s;}
+.admin-bar button:hover{border-color:var(--accent);color:var(--accent);}
+.admin-bar button.danger{border-color:#3a1818;color:var(--red);}
+.admin-bar button.danger:hover{background:#1e1010;}
+.admin-body{flex:1;overflow-y:auto;padding:20px 18px;display:flex;flex-direction:column;gap:16px;}
 .admin-sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.admin-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--sub);padding:12px 14px 10px;border-bottom:1px solid var(--border2);}
+.admin-sec-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sub);padding:12px 14px 10px;border-bottom:1px solid var(--border2);}
 .user-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1c1c24;}
+.user-row:last-child{border-bottom:none;}
+.u-av{width:32px;height:32px;border-radius:8px;background:var(--asoft);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.u-info{flex:1;min-width:0;}
+.u-name{font-size:13px;font-weight:600;}
+.u-meta{font-size:10px;color:var(--sub);margin-top:2px;}
+.u-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;}
+.bp{background:#201508;color:var(--orange);border:1px solid #3a2510;}
+.ba{background:#0f2010;color:var(--green);border:1px solid #1a3a1a;}
+.br-badge{background:#200f0f;color:var(--red);border:1px solid #3a1818;}
+.u-acts{display:flex;gap:6px;flex-shrink:0;}
+.uact{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid;cursor:pointer;font-family:inherit;background:none;transition:all .1s;}
+.uact.approve{border-color:#1a3a1a;color:var(--green);}.uact.approve:hover{background:#0f2010;}
+.uact.reject{border-color:#3a1818;color:var(--red);}.uact.reject:hover{background:#200f0f;}
 
-/* APP LAYOUT */
+/* APP */
 #app{display:none;height:100%;position:relative;}
-#layout{display:flex;height:100%;}
-#side{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;}
-#side-scroll{flex:1;overflow-y:auto;padding:14px 12px;}
-.s-lbl{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--sub);margin-bottom:9px;letter-spacing:1px;}
-.field{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;margin-bottom:8px;outline:none;}
-.btn{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;margin-bottom:5px;display:flex;align-items:center;gap:8px;font-size:12px;}
-.btn.accent{background:var(--accent);border:none;color:white;justify-content:center;}
+#user-chip{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(15,15,17,.88);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:8px;backdrop-filter:blur(8px);}
+#user-chip .uc-name{color:var(--accent);}
+#user-chip .uc-sep{width:1px;height:10px;background:var(--border);}
+#user-chip button{color:var(--sub);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid transparent;background:none;font-family:inherit;transition:all .1s;}
+#user-chip button:hover{border-color:var(--border);color:var(--text);}
+#user-chip .uc-admin{border-color:var(--border)!important;color:var(--accent)!important;background:var(--asoft)!important;font-weight:600;}
 
-/* MAP */
-#map-el{flex:1;position:relative;background:var(--bg);cursor:grab;overflow:hidden;touch-action:none;}
-#cv-el{position:absolute;inset:0;image-rendering:pixelated;}
-.hchip{position:absolute;bottom:20px;left:20px;background:rgba(0,0,0,0.5);padding:5px 10px;border-radius:5px;font-size:11px;z-index:5;}
-#user-chip{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(15,15,17,.8);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:6px 12px;display:flex;gap:10px;align-items:center;}
-.swatches{display:flex;gap:5px;margin-bottom:10px;}
-.sw{width:20px;height:20px;border-radius:4px;cursor:pointer;border:2px solid transparent;}
-.sw.on{border-color:white;}
+/* MAP INNER */
+#layout{display:flex;height:100%;overflow:hidden;}
+#side{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+#side-scroll{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:20px;}
+#side-scroll::-webkit-scrollbar{width:3px;}
+#side-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.s-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-bottom:9px;}
+.field{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;transition:border-color .15s;margin-bottom:8px;}
+.field:focus{border-color:var(--accent);}.field::placeholder{color:var(--muted);}
+.swatches{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.sw{width:22px;height:22px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s;}
+.sw:hover{transform:scale(1.12);}.sw.on{border-color:#fff;}
+.btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;transition:all .1s;margin-bottom:5px;}
+.btn:last-child{margin-bottom:0;}.btn:hover{background:#25252d;border-color:#3a3a48;}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;justify-content:center;}.btn.accent:hover{background:var(--accent2);}
+.btn.danger{color:var(--red);border-color:#3a1818;background:#1e1010;}.btn.danger:hover{background:#2a1212;border-color:#5a2020;}
+.btn.ghost{color:var(--sub);border-color:transparent;background:transparent;}.btn.ghost:hover{background:var(--card);color:var(--text);border-color:var(--border);}
+.brow{display:flex;align-items:center;border-radius:10px;margin-bottom:6px;border:1px solid var(--border2);overflow:hidden;cursor:pointer;background:var(--card);transition:border-color .12s,background .1s;}
+.brow:hover{border-color:var(--border);}.brow.sel{border-color:var(--accent);background:#1c1828;}
+.brow-strip{width:4px;flex-shrink:0;align-self:stretch;}.brow-info{flex:1;min-width:0;padding:9px;}
+.brow-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;}
+.brow-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.pill{display:inline-flex;align-items:center;font-size:9px;font-weight:600;padding:2px 6px;border-radius:20px;white-space:nowrap;}
+.pill.p{background:#1f1830;color:var(--accent);}.pill.g{background:#0f2218;color:var(--green);}.pill.r{background:#200f0f;color:var(--red);}.pill.a{background:#201408;color:var(--orange);}.pill.s{background:#2a1f0e;color:var(--sand);}
+.brow-del{width:36px;min-height:52px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;font-size:16px;border-left:1px solid var(--border2);flex-shrink:0;transition:all .1s;}
+.brow-del:hover{color:var(--red);background:#1e1010;}
+.acard{border:1px solid var(--accent);border-radius:10px;overflow:hidden;background:var(--card);}
+.acard-head{display:flex;align-items:center;gap:9px;padding:10px;border-bottom:1px solid #1f1830;background:#1a1626;}
+.acard-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}.acard-name{font-size:13px;font-weight:600;flex:1;}
+.acard-body{padding:10px;display:flex;flex-direction:column;gap:6px;}
+.srow{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);}.srow span:last-child{font-weight:500;color:var(--text);}
+.acard-act{display:flex;gap:6px;padding:0 10px 10px;}.acard-act .btn{margin-bottom:0;flex:1;justify-content:center;padding:7px;}
+.empty{font-size:12px;color:var(--muted);}
+#map-el{flex:1;position:relative;overflow:hidden;background:var(--bg);cursor:grab;touch-action:none;}
+#map-el.no-drag{cursor:crosshair;}#map-el:active:not(.no-drag){cursor:grabbing;}
+#cv-el{position:absolute;top:0;left:0;image-rendering:pixelated;}
+#ring-el{position:absolute;pointer-events:none;z-index:3;border:2px solid rgba(248,113,113,.55);}
+#tools-el{position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;gap:5px;}
+#utils-el{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;gap:5px;}
+.fab{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:rgba(23,23,27,.92);backdrop-filter:blur(10px);cursor:pointer;color:var(--sub);transition:all .12s;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.35);}
+.fab svg{width:19px;height:19px;}.fab:hover{background:rgba(30,30,36,.98);border-color:var(--accent);color:var(--text);}
+.fab.on{background:var(--asoft);border-color:var(--accent);color:var(--accent);}.fab.sand-on{background:rgba(201,147,74,.15);border-color:var(--sand);color:var(--sand);}.fab.mark-on{background:rgba(99,102,241,.15);border-color:#6366f1;color:#6366f1;}
+.fab::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:rgba(10,10,14,.95);color:var(--text);font-size:10px;font-weight:500;font-family:inherit;padding:4px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;border:1px solid var(--border);}
+#utils-el .fab::after{left:auto;right:calc(100% + 10px);}.fab:hover::after{opacity:1;}
+#colorDot{width:18px;height:18px;border-radius:5px;border:2px solid rgba(255,255,255,.12);}
+.fab-sep{height:1px;background:var(--border);margin:3px 4px;}
+.hchip{position:absolute;z-index:5;background:rgba(15,15,17,.88);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;color:var(--sub);pointer-events:none;backdrop-filter:blur(8px);line-height:1.8;}
+.hchip span{color:var(--text);}.hchip .a{color:var(--orange);}.hchip .r{color:var(--red);}
+#chip-pos{bottom:44px;left:14px;}
+#chip-mode{top:52px;left:50%;transform:translateX(-50%);font-weight:500;white-space:nowrap;}
+#tip-el{position:absolute;z-index:20;background:rgba(15,15,17,.94);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:11px;color:var(--sub);pointer-events:none;display:none;line-height:1.9;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4);}
+#wm{position:absolute;bottom:14px;right:14px;z-index:6;display:flex;align-items:center;gap:7px;background:rgba(15,15,17,.72);border:1px solid var(--border);border-radius:8px;padding:5px 10px;pointer-events:none;backdrop-filter:blur(8px);}
+#wm .wn{font-size:10px;font-weight:700;color:var(--accent);}#wm .ws{width:1px;height:11px;background:var(--border);}
+#wm .wd{font-size:10px;font-weight:500;color:var(--sub);display:flex;align-items:center;gap:4px;}#wm .wd svg{width:12px;height:12px;fill:var(--sub);}
+#wm .wc{font-size:9px;color:var(--muted);}
+#sheet-el{display:none;position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;max-height:66vh;flex-direction:column;box-shadow:0 -8px 32px rgba(0,0,0,.5);transition:transform .25s ease;}
+#sh-handle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0;flex-shrink:0;}
+#sh-tabs{display:flex;padding:8px 12px 0;flex-shrink:0;border-bottom:1px solid var(--border2);}
+.tab-btn{flex:1;padding:7px 4px;font-size:11px;font-weight:500;color:var(--sub);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;transition:all .12s;text-align:center;}
+.tab-btn.on{color:var(--accent);border-bottom-color:var(--accent);}
+#sh-body{flex:1;overflow-y:auto;padding:12px;}#sh-body::-webkit-scrollbar{display:none;}
+#ov-el{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);align-items:center;justify-content:center;}
+#ov-el.show{display:flex;}
+#mod-el{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;width:340px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.6);}
+#mod-el h3{font-size:15px;font-weight:700;margin-bottom:5px;color:var(--text);}
+#mod-el .msub{font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.6;}
+.code-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:monospace;font-size:10px;color:var(--accent);word-break:break-all;line-height:1.6;margin-bottom:12px;user-select:all;cursor:text;max-height:110px;overflow-y:auto;}
+textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:80px;font-size:10px;}textarea.code-box.err{border-color:var(--red2);}
+.modal-row{display:flex;gap:8px;}.modal-row .btn{margin-bottom:0;}
+.epick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;}
+.epick button{width:36px;height:36px;border-radius:8px;font-size:19px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+.epick button:hover{border-color:var(--accent);}.epick button.on{border-color:var(--accent);background:var(--asoft);}
+@media(max-width:640px){
+  #side{display:none;}#sheet-el{display:flex;}#chip-mode{display:none;}
+  #tools-el{top:auto;bottom:78px;transform:none;}#utils-el{top:auto;bottom:78px;transform:none;}
+  #wm{display:none;}#chip-pos{bottom:78px;}
+}
 </style>
 </head>
 <body>
 
 <div id="auth-screen">
   <div class="auth-box">
-    <div class="auth-logo"><div class="brand">LSN Chunk Map</div></div>
+    <div class="auth-logo">
+      <div class="brand">LSN Chunk Map</div>
+      <div class="sub">by Risk · r1skx</div>
+    </div>
     <div class="auth-tabs">
       <button class="auth-tab on" id="tab-login" onclick="switchTab('login')">Login</button>
       <button class="auth-tab" id="tab-reg" onclick="switchTab('register')">Register</button>
     </div>
     <div id="form-login">
-      <div class="auth-field"><label>Username</label><input id="l-user" type="text"></div>
-      <div class="auth-field"><label>Password</label><input id="l-pass" type="password"></div>
+      <div class="auth-field"><label>Email</label><input id="l-user" type="email" placeholder="email@example.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" placeholder="password" autocomplete="current-password"></div>
       <button class="auth-btn" onclick="doLogin()">Login</button>
     </div>
     <div id="form-reg" style="display:none">
-      <div class="auth-field"><label>Username</label><input id="r-user" type="text"></div>
-      <div class="auth-field"><label>Password</label><input id="r-pass" type="password"></div>
+      <div class="auth-field"><label>Email</label><input id="r-user" type="email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label><input id="r-pass" type="password" placeholder="password" autocomplete="new-password"></div>
+      <div class="auth-field"><label>Confirm Password</label><input id="r-pass2" type="password" placeholder="repeat password" autocomplete="new-password"></div>
       <button class="auth-btn" onclick="doRegister()">Request Access</button>
     </div>
+    <div id="auth-msg" style="display:none"></div>
   </div>
 </div>
 
 <div id="admin-panel">
   <div class="admin-bar">
-    <span class="title">Admin Panel</span><div style="flex:1"></div>
-    <button class="btn" onclick="closeAdmin()">Back</button>
+    <span class="title">Admin Panel</span><span class="sp"></span>
+    <button onclick="closeAdmin()">Back to Map</button>
+    <button class="danger" onclick="doLogout()">Logout</button>
   </div>
   <div class="admin-body">
-    <div class="admin-sec"><div class="admin-sec-title">Users</div><div id="admin-users"></div></div>
+    <div class="admin-sec">
+      <div class="admin-sec-title">Pending Requests</div>
+      <div id="pending-list"></div>
+    </div>
+    <div class="admin-sec">
+      <div class="admin-sec-title">All Users</div>
+      <div id="all-users-list"></div>
+    </div>
   </div>
 </div>
 
 <div id="app">
   <div id="user-chip">
-    <span id="uc-name">—</span>
-    <span id="map-indicator" style="font-size:10px; color:var(--sub)">(Your Map)</span>
-    <button id="uc-admin-btn" style="display:none; color:var(--accent)" onclick="openAdmin()">Admin</button>
-    <button onclick="location.reload()">Logout</button>
+    <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="var(--accent)" stroke-width="1.6"/><path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <span class="uc-name" id="uc-name">—</span>
+    <div class="uc-sep"></div>
+    <button id="uc-admin-btn" onclick="openAdminPanel()" style="display:none" class="uc-admin">Admin</button>
+    <button onclick="doLogout()">Logout</button>
   </div>
+
   <div id="layout">
     <div id="side">
       <div id="side-scroll">
-        <div class="s-lbl">Invite People</div>
-        <input id="inviteUser" class="field" placeholder="Username to invite">
-        <button class="btn accent" onclick="sendInvite()">Invite to My Map</button>
-
-        <div style="margin-top:20px">
-          <div class="s-lbl">Accessible Maps</div>
-          <div id="map-list">
-             </div>
+        <div>
+          <div class="s-lbl">New Base</div>
+          <input id="nameIn" class="field" type="text" placeholder="Base name" maxlength="16">
+          <div class="swatches" id="d-sw"></div>
+          <button class="btn accent" onclick="startChest()">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M2 4h12v2H2zM2 7h12v7H2z"/><rect x="6" y="9" width="4" height="2.5" rx=".5" fill="rgba(0,0,0,.3)"/></svg>
+            Place Claim Chest
+          </button>
         </div>
-
-        <div style="margin-top:20px">
-          <div class="s-lbl">Add Base</div>
-          <input id="baseName" class="field" placeholder="Base Name">
-          <div class="swatches" id="swatches"></div>
-          <button class="btn accent" onclick="addBase()">Add to Current Map</button>
+        <div id="d-active" style="display:none"><div class="s-lbl">Active Base</div><div id="d-acard"></div></div>
+        <div><div class="s-lbl">Bases</div><div id="d-list"><div class="empty">No bases yet</div></div></div>
+        <div>
+          <div class="s-lbl">Save &amp; Load</div>
+          <button class="btn" onclick="doExport()"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg>Export code</button>
+          <button class="btn" onclick="openImport()"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 12V3M4 6l4-4 4 4M2 13h12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg>Import code</button>
         </div>
       </div>
     </div>
+
     <div id="map-el">
       <canvas id="cv-el"></canvas>
-      <div class="hchip">X: <span id="hx">0</span> Z: <span id="hz">0</span></div>
+      <div id="ring-el"></div>
+      <div id="tools-el">
+        <button class="fab on" id="fbPan" onclick="setTool('pan')" data-tip="Pan"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2v2M10 16v2M2 10h2M16 10h2M5.05 5.05l1.41 1.41M13.54 13.54l1.41 1.41M5.05 14.95l1.41-1.41M13.54 6.46l1.41-1.41M10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="fab" id="fbPlace" onclick="onFbPlace()" data-tip="Place Chest"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="8" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="5" width="16" height="4" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="10" width="4" height="3" rx="1" fill="currentColor"/></svg></button>
+        <button class="fab" id="fbEdit" onclick="setTool('edit')" data-tip="Edit: L=claim R=remove"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".4"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7"/></svg></button>
+        <div class="fab-sep"></div>
+        <button class="fab" id="fbSand" onclick="setTool('sand')" data-tip="Sandwall: L=add R=remove"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" fill="currentColor" opacity=".2" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="8" x2="20" y2="8" stroke="currentColor" stroke-width="1" opacity=".5"/><line x1="2" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1" opacity=".5"/><line x1="8" y1="2" x2="8" y2="20" stroke="currentColor" stroke-width="1" opacity=".5"/><line x1="12" y1="2" x2="12" y2="20" stroke="currentColor" stroke-width="1" opacity=".5"/></svg></button>
+        <button class="fab" id="fbMark" onclick="setTool('mark')" data-tip="Markers: L=place R=remove"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2a5 5 0 0 1 5 5c0 3.5-5 11-5 11S5 10.5 5 7a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="7.5" r="1.8" fill="currentColor"/></svg></button>
+      </div>
+      <div id="utils-el">
+        <button class="fab" id="fbColor" onclick="openColorPicker()" data-tip="Color"><div id="colorDot"></div></button>
+        <div class="fab-sep"></div>
+        <button class="fab" onclick="doZoom(1.14)" data-tip="Zoom in"><svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M9 6v6M6 9h6M14 14l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="fab" onclick="doZoom(.88)" data-tip="Zoom out"><svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M6 9h6M14 14l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <div class="fab-sep"></div>
+        <button class="fab" onclick="openMore()" data-tip="More"><svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="10" cy="16" r="1.5"/></svg></button>
+      </div>
+      <div class="hchip" id="chip-pos">X&nbsp;<span id="hx">0</span>&ensp;Z&nbsp;<span id="hz">0</span><br><span id="hint"></span></div>
+      <div class="hchip" id="chip-mode" style="color:var(--sub)">Pan &amp; zoom</div>
+      <div id="tip-el"></div>
+      <div id="wm">
+        <span class="wn">Risk</span><div class="ws"></div>
+        <span class="wd"><svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.021.015.042.031.057a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>r1skx</span>
+        <span class="wc">© 2025</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="sheet-el">
+    <div id="sh-handle"></div>
+    <div id="sh-tabs">
+      <button class="tab-btn on" onclick="showSheet('new',this)">New</button>
+      <button class="tab-btn" onclick="showSheet('active',this)">Active</button>
+      <button class="tab-btn" onclick="showSheet('bases',this)">Bases</button>
+      <button class="tab-btn" onclick="showSheet('save',this)">Save</button>
+    </div>
+    <div id="sh-body"></div>
+  </div>
+
+  <div id="ov-el">
+    <div id="mod-el">
+      <h3 id="m-title"></h3>
+      <div class="msub" id="m-sub"></div>
+      <div id="m-body"></div>
+      <div class="modal-row">
+        <button class="btn accent" id="m-ok" style="flex:1;justify-content:center"></button>
+        <button class="btn ghost" onclick="closeModal()" style="width:74px;justify-content:center">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCkcS23tW3hvcdCSCpBOy30EQVMxqYXEJQ",
-  authDomain: "lsn-map.firebaseapp.com",
-  projectId: "lsn-map",
-  storageBucket: "lsn-map.firebasestorage.app",
-  messagingSenderId: "520317481803",
-  appId: "1:520317481803:web:ffcc027fd3be1984b22ece"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// ═══ CONFIG ═══════════════════════════════════════
+const ADMIN_USER='Risk';
+const ADMIN_PASS_HASH='r1skx_2025'; 
+const USERS_KEY='lsn-users-v2';
+const SESSION_KEY='lsn-session-v2';
 
-// STATE
-let currentUser = null;
-let currentMapOwner = null; // Whose map we are looking at
-let BASES = [];
-let panX = window.innerWidth/2, panY = window.innerHeight/2, scale = 2;
-let selColor = '#8b5cf6';
-const TILE = 16;
+// ═══ HASH ═════════════════════════════════════════
+async function hashPass(p){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p+'::lsn_salt_r1skx_2025'));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 
-const CV = document.getElementById('cv-el');
-const CTX = CV.getContext('2d');
+// ═══ STORAGE ══════════════════════════════════════
+async function getUsers(){try{const r=await window.storage.get(USERS_KEY,true);return r?JSON.parse(r.value):{};}catch{return{};}}
+async function setUsers(u){try{await window.storage.set(USERS_KEY,JSON.stringify(u),true);}catch{}}
+async function getSession(){try{const r=await window.storage.get(SESSION_KEY,false);return r?JSON.parse(r.value):null;}catch{return null;}}
+async function setSession(d){try{if(d)await window.storage.set(SESSION_KEY,JSON.stringify(d),false);else await window.storage.delete(SESSION_KEY,false);}catch{}}
 
-// --- MAP ENGINE ---
-function draw() {
-  CV.width = window.innerWidth;
-  CV.height = window.innerHeight;
-  CTX.clearRect(0,0,CV.width, CV.height);
-  const ts = TILE * scale;
+// ═══ AUTH UI ══════════════════════════════════════
+let curTab='login';
+function switchTab(t){curTab=t;document.getElementById('tab-login').classList.toggle('on',t==='login');document.getElementById('tab-reg').classList.toggle('on',t==='register');document.getElementById('form-login').style.display=t==='login'?'':'none';document.getElementById('form-reg').style.display=t==='register'?'':'none';clearMsg();}
+function showMsg(txt,type='err'){const e=document.getElementById('auth-msg');e.style.display='';e.className='auth-msg '+type;e.innerHTML=txt;}
+function clearMsg(){const e=document.getElementById('auth-msg');e.style.display='none';e.textContent='';}
 
-  // Grid
-  CTX.strokeStyle = '#1a1a20';
-  for(let x=panX%ts; x<CV.width; x+=ts) { CTX.beginPath(); CTX.moveTo(x,0); CTX.lineTo(x,CV.height); CTX.stroke(); }
-  for(let y=panY%ts; y<CV.height; y+=ts) { CTX.beginPath(); CTX.moveTo(0,y); CTX.lineTo(CV.width,y); CTX.stroke(); }
+async function doLogin(){
+  const user=document.getElementById('l-user').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  if(!user||!pass){showMsg('Fill in all fields.');return;}
+  if(user.toLowerCase()===ADMIN_USER.toLowerCase()){
+    const h=await hashPass(pass);const ah=await hashPass(ADMIN_PASS_HASH);
+    if(h!==ah){showMsg('Wrong password.');return;}
+    await setSession({username:ADMIN_USER,role:'admin',ts:Date.now()});
+    enterApp(ADMIN_USER,'admin');return;
+  }
+  const users=await getUsers();const u=users[user.toLowerCase()];
+  if(!u){showMsg('Account not found.');return;}
+  const h=await hashPass(pass);
+  if(h!==u.hash){showMsg('Wrong password.');return;}
+  if(u.status==='pending'){showMsg('Your account is pending approval by Risk.','warn');return;}
+  if(u.status==='rejected'){showMsg('Your request was not approved.');return;}
+  await setSession({username:u.username,role:'user',ts:Date.now()});
+  enterApp(u.username,'user');
+}
 
-  // Bases
-  BASES.forEach(b => {
-    CTX.fillStyle = b.color;
-    b.chunks?.forEach(c => {
-      CTX.fillRect(panX + c.x*ts, panY + c.z*ts, ts, ts);
+async function doRegister(){
+  const user=document.getElementById('r-user').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const pass2=document.getElementById('r-pass2').value;
+  if(!user||!pass||!pass2){showMsg('Fill in all fields.');return;}
+  if(user.length < 3){showMsg('Email too short.');return;}
+  if(pass!==pass2){showMsg('Passwords do not match.');return;}
+  const users=await getUsers();
+  if(users[user.toLowerCase()] || user.toLowerCase()===ADMIN_USER.toLowerCase()){showMsg('Account already exists.');return;}
+  const h=await hashPass(pass);
+  users[user.toLowerCase()]={username:user,hash:h,status:'pending',ts:Date.now()};
+  await setUsers(users);
+  showMsg('Access request sent. Contact Risk for approval.','ok');
+}
+
+async function doLogout(){await setSession(null);location.reload();}
+
+// ═══ APP LOGIC ════════════════════════════════════
+const TILE=16;
+let scale=0.4, panX=0, panY=0;
+let bases=[], markers=[], sandwalls=[];
+let activeBaseId=null, tool='pan', curColor='#8b5cf6';
+let MAP, CV, CTX;
+
+const COLORS=['#8b5cf6','#ef4444','#4ade80','#fb923c','#c9934a','#38bdf8','#f472b6','#94a3b8'];
+
+async function checkSession(){
+  const s=await getSession();
+  if(s && (Date.now()-s.ts < 86400000*7)){
+    enterApp(s.username,s.role);
+  }
+}
+
+function enterApp(name,role){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('uc-name').textContent=name;
+  if(role==='admin')document.getElementById('uc-admin-btn').style.display='block';
+  initMap();
+  loadData();
+}
+
+function initMap(){
+  MAP=document.getElementById('map-el');
+  CV=document.getElementById('cv-el');
+  CTX=CV.getContext('2d');
+  resize();
+  window.addEventListener('resize',resize);
+  panX=CV.width/2; panY=CV.height/2;
+  
+  const sw=document.getElementById('d-sw');
+  sw.innerHTML='';
+  COLORS.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='sw'; d.style.background=c;
+    if(c===curColor)d.classList.add('on');
+    d.onclick=()=>{curColor=c; [...sw.children].forEach(x=>x.classList.remove('on')); d.classList.add('on'); document.getElementById('colorDot').style.background=c;};
+    sw.appendChild(d);
+  });
+  document.getElementById('colorDot').style.background=curColor;
+  
+  draw();
+}
+
+function resize(){
+  CV.width=MAP.clientWidth; CV.height=MAP.clientHeight;
+  draw();
+}
+
+function draw(){
+  if(!CTX)return;
+  CTX.clearRect(0,0,CV.width,CV.height);
+  CTX.save();
+  CTX.translate(panX,panY);
+  CTX.scale(scale,scale);
+
+  // Draw Grid
+  const step=TILE*16;
+  const xStart=Math.floor((-panX/scale)/step)*step;
+  const xEnd=Math.ceil(((CV.width-panX)/scale)/step)*step;
+  const yStart=Math.floor((-panY/scale)/step)*step;
+  const yEnd=Math.ceil(((CV.height-panY)/scale)/step)*step;
+
+  CTX.strokeStyle='rgba(255,255,255,0.04)';
+  CTX.lineWidth=1/scale;
+  for(let x=xStart;x<=xEnd;x+=step){CTX.beginPath();CTX.moveTo(x,yStart);CTX.lineTo(x,yEnd);CTX.stroke();}
+  for(let y=yStart;y<=yEnd;y+=step){CTX.beginPath();CTX.moveTo(xStart,y);CTX.lineTo(xEnd,y);CTX.stroke();}
+
+  // Draw Bases & Claims
+  bases.forEach(b=>{
+    CTX.fillStyle=b.color+'33';
+    b.chunks.forEach(c=>{
+      CTX.fillRect(c.x*TILE,c.z*TILE,TILE,TILE);
     });
-  });
-  requestAnimationFrame(draw);
-}
-
-// --- CORE LOGIC ---
-async function switchMap(ownerId, ownerName) {
-  currentMapOwner = ownerId;
-  document.getElementById('map-indicator').textContent = ownerId === currentUser.uid ? "(Your Map)" : `(${ownerName}'s Map)`;
-  
-  // Listen to the specific owner's map data
-  db.collection('maps').doc(ownerId).collection('bases').onSnapshot(snap => {
-    BASES = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-  });
-}
-
-async function addBase() {
-  const name = document.getElementById('baseName').value;
-  if(!name) return;
-  await db.collection('maps').doc(currentMapOwner).collection('bases').add({
-    name, color: selColor, chunks: [{x:0, z:0}] 
-  });
-  document.getElementById('baseName').value = "";
-}
-
-async function sendInvite() {
-  const targetName = document.getElementById('inviteUser').value;
-  const snap = await db.collection('users').where('username', '==', targetName).get();
-  if(snap.empty) return alert("User not found");
-  
-  const targetId = snap.docs[0].id;
-  await db.collection('users').doc(targetId).update({
-    invites: firebase.firestore.FieldValue.arrayUnion({id: currentUser.uid, name: currentUser.username})
-  });
-  alert("Invited!");
-}
-
-// --- AUTH & INIT ---
-async function doLogin() {
-  const user = document.getElementById('l-user').value;
-  // This is a simplified login for your preview. In production, use Firebase Auth email/pass.
-  // We will find the user document by username
-  const snap = await db.collection('users').where('username', '==', user).get();
-  if(snap.empty) return alert("User not found");
-  const userData = snap.docs[0].data();
-  currentUser = {uid: snap.docs[0].id, ...userData};
-  
-  enterApp();
-}
-
-function enterApp() {
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('uc-name').textContent = currentUser.username;
-  
-  if(currentUser.username === 'Risk') document.getElementById('uc-admin-btn').style.display = 'block';
-
-  // Load My Map by default
-  switchMap(currentUser.uid, currentUser.username);
-  
-  // Render Accessible Maps (Invites)
-  const list = document.getElementById('map-list');
-  const myBtn = document.createElement('div');
-  myBtn.className = "btn"; myBtn.textContent = "My Map";
-  myBtn.onclick = () => switchMap(currentUser.uid, currentUser.username);
-  list.appendChild(myBtn);
-
-  currentUser.invites?.forEach(inv => {
-    const btn = document.createElement('div');
-    btn.className = "btn"; btn.textContent = `${inv.name}'s Map`;
-    btn.onclick = () => switchMap(inv.id, inv.name);
-    list.appendChild(btn);
+    if(b.chest){
+      CTX.fillStyle=b.color;
+      CTX.fillRect(b.chest.x*TILE+2,b.chest.z*TILE+2,TILE-4,TILE-4);
+    }
   });
 
-  requestAnimationFrame(draw);
+  // Draw Sandwalls
+  CTX.fillStyle='#c9934a88';
+  sandwalls.forEach(s=>{
+    CTX.fillRect(s.x*TILE,s.z*TILE,TILE,TILE);
+  });
+
+  // Draw Markers
+  markers.forEach(m=>{
+    CTX.fillStyle=m.color;
+    CTX.beginPath();
+    CTX.arc(m.x*TILE+TILE/2,m.z*TILE+TILE/2,TILE/3,0,Math.PI*2);
+    CTX.fill();
+  });
+
+  CTX.restore();
 }
 
-// UI Helpers
-function switchTab(t) {
-  document.getElementById('form-login').style.display = t === 'login' ? '' : 'none';
-  document.getElementById('form-reg').style.display = t === 'register' ? '' : 'none';
-}
+// ═══ INPUT HANDLING ══════════════════════════════
+let isDown=false, lx, ly, pmx, pmy, lastDist, pinching=false, touchMoved=false;
 
-// Pan controls
-let isDragging = false; let startX, startY;
-CV.addEventListener('mousedown', e => { isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY; });
-window.addEventListener('mousemove', e => {
-  if(isDragging) { panX = e.clientX - startX; panY = e.clientY - startY; }
-  const rect = CV.getBoundingClientRect();
-  document.getElementById('hx').textContent = Math.floor((e.clientX - rect.left - panX) / (TILE*scale)) * 16;
-  document.getElementById('hz').textContent = Math.floor((e.clientY - rect.top - panY) / (TILE*scale)) * 16;
-});
-window.addEventListener('mouseup', () => isDragging = false);
-
-// Init Swatches
-const colors = ['#8b5cf6','#ef4444','#4ade80','#fb923c','#c9934a'];
-colors.forEach(c => {
-  const s = document.createElement('div');
-  s.className = 'sw'; s.style.background = c;
-  s.onclick = () => { selColor = c; document.querySelectorAll('.sw').forEach(x => x.classList.remove('on')); s.classList.add('on'); };
-  document.getElementById('swatches').appendChild(s);
+MAP.addEventListener('mousedown',e=>{
+  isDown=true; lx=e.clientX; ly=e.clientY;
+  if(tool!=='pan' && e.button===0) handleMapClick(e);
 });
 
+MAP.addEventListener('mousemove',e=>{
+  const r=MAP.getBoundingClientRect();
+  const mx=(e.clientX-r.left-panX)/scale, my=(e.clientY-r.top-panY)/scale;
+  const cx=Math.floor(mx/TILE), cz=Math.floor(my/TILE);
+  document.getElementById('hx').textContent=cx*16;
+  document.getElementById('hz').textContent=cz*16;
+
+  if(isDown && tool==='pan'){
+    panX+=e.clientX-lx; panY+=e.clientY-ly;
+    lx=e.clientX; ly=e.clientY;
+    draw();
+  }
+});
+
+MAP.addEventListener('mouseup',()=>isDown=false);
+MAP.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=MAP.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  const f=e.deltaY>0?0.9:1.1;
+  const ns=Math.min(Math.max(scale*f,0.05),16);
+  panX=mx-(mx-panX)*(ns/scale);
+  panY=my-(my-panY)*(ns/scale);
+  scale=ns;
+  draw();
+},{passive:false});
+
+// Touch support logic
+MAP.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    isDown=true; touchMoved=false;
+    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+  }else if(e.touches.length===2){
+    pinching=true;
+    lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const r=MAP.getBoundingClientRect();
+    pmx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left;
+    pmy=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;
+  }
+});
+
+MAP.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===2){
+    pinching=true; touchMoved=true;
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const r=MAP.getBoundingClientRect();
+    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left, my=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;
+    panX+=mx-pmx; panY+=my-pmy;
+    const f=dist/lastDist;
+    panX=mx-(mx-panX)*f; panY=my-(my-panY)*f;
+    scale=Math.min(Math.max(scale*f,0.05),16);
+    lastDist=dist; pmx=mx; pmy=my;
+    draw();
+  }else if(e.touches.length===1 && !pinching){
+    const dx=e.touches[0].clientX-lx, dy=e.touches[0].clientY-ly;
+    if(Math.abs(dx)>3||Math.abs(dy)>3) touchMoved=true;
+    panX+=dx; panY+=dy;
+    lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+    draw();
+  }
+},{passive:false});
+
+MAP.addEventListener('touchend',e=>{
+  if(e.touches.length===0) pinching=false;
+  if(e.changedTouches.length===1 && !touchMoved && !pinching){
+    const r=MAP.getBoundingClientRect();
+    const mx=(e.changedTouches[0].clientX-r.left-panX)/scale, my=(e.changedTouches[0].clientY-r.top-panY)/scale;
+    const cx=Math.floor(mx/TILE), cz=Math.floor(my/TILE);
+    if(tool!=='pan') executeAction(cx,cz,0);
+  }
+});
+
+// Initialization
+checkSession();
 </script>
 </body>
 </html>
