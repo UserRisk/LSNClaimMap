@@ -208,7 +208,7 @@ function adj(cx,cz,set){return set.has(K(cx-1,cz))||set.has(K(cx+1,cz))||set.has
 function connected(set){if(set.size<=1)return true;const sv=set.values().next().value,vis=new Set([sv]),q=[sv];while(q.length){const[x,z]=UK(q.shift());for(const[nx,nz]of[[x-1,z],[x+1,z],[x,z-1],[x,z+1]]){const k=K(nx,nz);if(set.has(k)&&!vis.has(k)){vis.add(k);q.push(k);}}}return vis.size===set.size;}
 function tooClose(cx,cz,ownId){for(const b of bases){if(b.id===ownId)continue;for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if(b.chunks.has(K(cx+dx,cz+dz)))return true;}return false;}
 function borderCount(cx,cz){let n=0;if(cx<BZONE)n++;if(cx>=CW-BZONE)n++;if(cz<BZONE)n++;if(cz>=CH-BZONE)n++;return n;}
-const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?30:b===1?36:50;};
+const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?30:b===1?36:49;};
 const PRICES=[0,0,1000,2828,5196,8000,11180,14697,18520,22627,27000,31623,36483,41569,46872,52383,58095,64000,70093,76368,82819,89443,96234,103189,110304,117576];
 for(let n=26;n<=49;n++)PRICES.push(Math.round(Math.pow(n-1,1.5)*200)*5);
 const totalCost=n=>{let t=0;for(let i=1;i<=Math.min(n,PRICES.length-1);i++)t+=PRICES[i];return t;};
