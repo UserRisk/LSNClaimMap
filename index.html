@@ -10,62 +10,8 @@
 :root{--bg:#0f0f11;--surface:#17171b;--card:#1e1e24;--border:#2a2a35;--border2:#222228;--text:#e8e8f0;--sub:#6b6b80;--muted:#3a3a48;--accent:#8b5cf6;--accent2:#7c3aed;--asoft:rgba(139,92,246,.15);--red:#f87171;--red2:#ef4444;--green:#4ade80;--orange:#fb923c;--sand:#c9934a;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;}
 
-/* AUTH */
-#auth-screen{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
-.auth-box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
-.auth-logo{text-align:center;margin-bottom:24px;}
-.auth-logo .brand{font-size:22px;font-weight:700;color:var(--accent);}
-.auth-logo .sub{font-size:11px;color:var(--sub);margin-top:4px;}
-.auth-tabs{display:flex;background:var(--card);border-radius:9px;padding:3px;margin-bottom:20px;}
-.auth-tab{flex:1;padding:7px;border-radius:7px;border:none;background:none;color:var(--sub);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;}
-.auth-tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3);}
-.auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.auth-field label{font-size:11px;color:var(--sub);font-weight:500;}
-.auth-field input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;outline:none;transition:border-color .15s;}
-.auth-field input:focus{border-color:var(--accent);}
-.auth-field input::placeholder{color:var(--muted);}
-.auth-btn{width:100%;padding:10px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .12s;}
-.auth-btn:hover{background:var(--accent2);}
-.auth-msg{margin-top:12px;padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.6;text-align:center;}
-.auth-msg.err{background:#200f0f;border:1px solid #3a1818;color:var(--red);}
-.auth-msg.ok{background:#0f2010;border:1px solid #1a3a1a;color:var(--green);}
-.auth-msg.warn{background:#1f1508;border:1px solid #3a2510;color:var(--orange);}
-
-/* ADMIN */
-#admin-panel{position:fixed;inset:0;z-index:900;background:var(--bg);display:none;flex-direction:column;}
-.admin-bar{height:52px;min-height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;}
-.admin-bar .title{font-size:14px;font-weight:700;color:var(--accent);}
-.admin-bar .sp{flex:1;}
-.admin-bar button{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;transition:all .1s;}
-.admin-bar button:hover{border-color:var(--accent);color:var(--accent);}
-.admin-bar button.danger{border-color:#3a1818;color:var(--red);}
-.admin-bar button.danger:hover{background:#1e1010;}
-.admin-body{flex:1;overflow-y:auto;padding:20px 18px;display:flex;flex-direction:column;gap:16px;}
-.admin-sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.admin-sec-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sub);padding:12px 14px 10px;border-bottom:1px solid var(--border2);}
-.user-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1c1c24;}
-.user-row:last-child{border-bottom:none;}
-.u-av{width:32px;height:32px;border-radius:8px;background:var(--asoft);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
-.u-info{flex:1;min-width:0;}
-.u-name{font-size:13px;font-weight:600;}
-.u-meta{font-size:10px;color:var(--sub);margin-top:2px;}
-.u-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;}
-.bp{background:#201508;color:var(--orange);border:1px solid #3a2510;}
-.ba{background:#0f2010;color:var(--green);border:1px solid #1a3a1a;}
-.br-badge{background:#200f0f;color:var(--red);border:1px solid #3a1818;}
-.u-acts{display:flex;gap:6px;flex-shrink:0;}
-.uact{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid;cursor:pointer;font-family:inherit;background:none;transition:all .1s;}
-.uact.approve{border-color:#1a3a1a;color:var(--green);}.uact.approve:hover{background:#0f2010;}
-.uact.reject{border-color:#3a1818;color:var(--red);}.uact.reject:hover{background:#200f0f;}
-
 /* APP */
-#app{display:none;height:100%;position:relative;}
-#user-chip{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(15,15,17,.88);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:8px;backdrop-filter:blur(8px);}
-#user-chip .uc-name{color:var(--accent);}
-#user-chip .uc-sep{width:1px;height:10px;background:var(--border);}
-#user-chip button{color:var(--sub);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid transparent;background:none;font-family:inherit;transition:all .1s;}
-#user-chip button:hover{border-color:var(--border);color:var(--text);}
-#user-chip .uc-admin{border-color:var(--border)!important;color:var(--accent)!important;background:var(--asoft)!important;font-weight:600;}
+#app{height:100%;}
 
 /* MAP INNER */
 #layout{display:flex;height:100%;overflow:hidden;}
@@ -148,60 +94,8 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
 </head>
 <body>
 
-<!-- AUTH -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <div class="auth-logo">
-      <div class="brand">LSN Chunk Map</div>
-      <div class="sub">by Risk · r1skx</div>
-    </div>
-    <div class="auth-tabs">
-      <button class="auth-tab on" id="tab-login" onclick="switchTab('login')">Login</button>
-      <button class="auth-tab" id="tab-reg" onclick="switchTab('register')">Register</button>
-    </div>
-    <div id="form-login">
-      <div class="auth-field"><label>Username</label><input id="l-user" type="text" placeholder="username" autocomplete="username"></div>
-      <div class="auth-field"><label>Password</label><input id="l-pass" type="password" placeholder="password" autocomplete="current-password"></div>
-      <button class="auth-btn" onclick="doLogin()">Login</button>
-    </div>
-    <div id="form-reg" style="display:none">
-      <div class="auth-field"><label>Username</label><input id="r-user" type="text" placeholder="choose username" autocomplete="username"></div>
-      <div class="auth-field"><label>Password</label><input id="r-pass" type="password" placeholder="password" autocomplete="new-password"></div>
-      <div class="auth-field"><label>Confirm Password</label><input id="r-pass2" type="password" placeholder="repeat password" autocomplete="new-password"></div>
-      <button class="auth-btn" onclick="doRegister()">Request Access</button>
-    </div>
-    <div id="auth-msg" style="display:none"></div>
-  </div>
-</div>
-
-<!-- ADMIN PANEL -->
-<div id="admin-panel">
-  <div class="admin-bar">
-    <span class="title">Admin Panel</span><span class="sp"></span>
-    <button onclick="closeAdmin()">Back to Map</button>
-    <button class="danger" onclick="doLogout()">Logout</button>
-  </div>
-  <div class="admin-body">
-    <div class="admin-sec">
-      <div class="admin-sec-title">Pending Requests</div>
-      <div id="pending-list"></div>
-    </div>
-    <div class="admin-sec">
-      <div class="admin-sec-title">All Users</div>
-      <div id="all-users-list"></div>
-    </div>
-  </div>
-</div>
-
 <!-- APP -->
 <div id="app">
-  <div id="user-chip">
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="var(--accent)" stroke-width="1.6"/><path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="uc-name" id="uc-name">—</span>
-    <div class="uc-sep"></div>
-    <button id="uc-admin-btn" onclick="openAdminPanel()" style="display:none" class="uc-admin">Admin</button>
-    <button onclick="doLogout()">Logout</button>
-  </div>
 
   <div id="layout">
     <div id="side">
@@ -280,113 +174,6 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
 </div>
 
 <script>
-// ═══ CONFIG ═══════════════════════════════════════
-const ADMIN_USER='Risk';
-const ADMIN_PASS_HASH='r1skx_2025'; // will be hashed on use
-const USERS_KEY='lsn-users-v2';
-const SESSION_KEY='lsn-session-v2';
-
-// ═══ HASH ═════════════════════════════════════════
-async function hashPass(p){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p+'::lsn_salt_r1skx_2025'));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-// ═══ STORAGE ══════════════════════════════════════
-async function getUsers(){try{const r=await window.storage.get(USERS_KEY,true);return r?JSON.parse(r.value):{};}catch{return{};}}
-async function setUsers(u){try{await window.storage.set(USERS_KEY,JSON.stringify(u),true);}catch{}}
-async function getSession(){try{const r=await window.storage.get(SESSION_KEY,false);return r?JSON.parse(r.value):null;}catch{return null;}}
-async function setSession(d){try{if(d)await window.storage.set(SESSION_KEY,JSON.stringify(d),false);else await window.storage.delete(SESSION_KEY,false);}catch{}}
-
-// ═══ AUTH UI ══════════════════════════════════════
-let curTab='login';
-function switchTab(t){curTab=t;document.getElementById('tab-login').classList.toggle('on',t==='login');document.getElementById('tab-reg').classList.toggle('on',t==='register');document.getElementById('form-login').style.display=t==='login'?'':'none';document.getElementById('form-reg').style.display=t==='register'?'':'none';clearMsg();}
-function showMsg(txt,type='err'){const e=document.getElementById('auth-msg');e.style.display='';e.className='auth-msg '+type;e.innerHTML=txt;}
-function clearMsg(){const e=document.getElementById('auth-msg');e.style.display='none';e.textContent='';}
-
-async function doLogin(){
-  const user=document.getElementById('l-user').value.trim();
-  const pass=document.getElementById('l-pass').value;
-  if(!user||!pass){showMsg('Fill in all fields.');return;}
-  if(user.toLowerCase()===ADMIN_USER.toLowerCase()){
-    const h=await hashPass(pass);const ah=await hashPass(ADMIN_PASS_HASH);
-    if(h!==ah){showMsg('Wrong password.');return;}
-    await setSession({username:ADMIN_USER,role:'admin',ts:Date.now()});
-    enterApp(ADMIN_USER,'admin');return;
-  }
-  const users=await getUsers();const u=users[user.toLowerCase()];
-  if(!u){showMsg('Account not found.');return;}
-  const h=await hashPass(pass);
-  if(h!==u.hash){showMsg('Wrong password.');return;}
-  if(u.status==='pending'){showMsg('Your account is pending approval by Risk.','warn');return;}
-  if(u.status==='rejected'){showMsg('Your request was not approved.');return;}
-  await setSession({username:u.username,role:'user',ts:Date.now()});
-  enterApp(u.username,'user');
-}
-
-async function doRegister(){
-  const user=document.getElementById('r-user').value.trim();
-  const pass=document.getElementById('r-pass').value;
-  const pass2=document.getElementById('r-pass2').value;
-  if(!user||!pass||!pass2){showMsg('Fill in all fields.');return;}
-  if(user.length<3){showMsg('Username must be at least 3 characters.');return;}
-  if(user.toLowerCase()===ADMIN_USER.toLowerCase()){showMsg('That username is reserved.');return;}
-  if(pass.length<6){showMsg('Password must be at least 6 characters.');return;}
-  if(pass!==pass2){showMsg('Passwords do not match.');return;}
-  if(!/^[a-zA-Z0-9_\-]+$/.test(user)){showMsg('Username: letters, numbers, _ and - only.');return;}
-  const users=await getUsers();
-  if(users[user.toLowerCase()]){showMsg('Username already taken.');return;}
-  const hash=await hashPass(pass);
-  users[user.toLowerCase()]={username:user,hash,status:'pending',registered:new Date().toISOString()};
-  await setUsers(users);
-  showMsg('Request sent! Risk will review your application and approve you.','ok');
-  document.getElementById('r-user').value='';document.getElementById('r-pass').value='';document.getElementById('r-pass2').value='';
-}
-
-document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(curTab==='login')doLogin();else doRegister();});
-
-// ═══ ENTER APP ════════════════════════════════════
-let _currentRole='user';
-function enterApp(username,role){
-  _currentRole=role;
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('admin-panel').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('uc-name').textContent=username;
-  if(role==='admin')document.getElementById('uc-admin-btn').style.display='';
-}
-
-async function doLogout(){await setSession(null);location.reload();}
-function openAdminPanel(){document.getElementById('admin-panel').style.display='flex';renderAdmin();}
-function closeAdmin(){document.getElementById('admin-panel').style.display='none';}
-
-// ═══ ADMIN ════════════════════════════════════════
-async function renderAdmin(){
-  const users=await getUsers();
-  const pending=Object.values(users).filter(u=>u.status==='pending');
-  const all=Object.values(users);
-  const pEl=document.getElementById('pending-list');
-  pEl.innerHTML=pending.length===0?'<div style="padding:14px;font-size:12px;color:var(--sub)">No pending requests</div>':
-    pending.map(u=>`<div class="user-row"><div class="u-av">${u.username[0].toUpperCase()}</div><div class="u-info"><div class="u-name">${u.username}</div><div class="u-meta">Registered ${new Date(u.registered).toLocaleDateString()}</div></div><span class="u-badge bp">Pending</span><div class="u-acts"><button class="uact approve" onclick="approveUser('${u.username.toLowerCase()}')">Approve</button><button class="uact reject" onclick="rejectUser('${u.username.toLowerCase()}')">Reject</button></div></div>`).join('');
-  const aEl=document.getElementById('all-users-list');
-  aEl.innerHTML=all.length===0?'<div style="padding:14px;font-size:12px;color:var(--sub)">No registered users</div>':
-    all.map(u=>`<div class="user-row"><div class="u-av">${u.username[0].toUpperCase()}</div><div class="u-info"><div class="u-name">${u.username}</div><div class="u-meta">${new Date(u.registered).toLocaleDateString()} · ${u.status}</div></div><span class="u-badge ${u.status==='approved'?'ba':u.status==='rejected'?'br-badge':'bp'}">${u.status}</span>${u.status==='approved'?`<div class="u-acts"><button class="uact reject" onclick="rejectUser('${u.username.toLowerCase()}')">Revoke</button></div>`:u.status==='rejected'?`<div class="u-acts"><button class="uact approve" onclick="approveUser('${u.username.toLowerCase()}')">Re-approve</button></div>`:''}</div>`).join('');
-}
-async function approveUser(k){const u=await getUsers();if(u[k]){u[k].status='approved';await setUsers(u);}renderAdmin();}
-async function rejectUser(k){const u=await getUsers();if(u[k]){u[k].status='rejected';await setUsers(u);}renderAdmin();}
-
-// ═══ SESSION CHECK ════════════════════════════════
-async function init(){
-  const s=await getSession();
-  if(!s)return;
-  if(Date.now()-s.ts>7*24*60*60*1000){await setSession(null);return;}
-  if(s.role==='admin'){enterApp(s.username,'admin');return;}
-  const users=await getUsers();const u=users[s.username.toLowerCase()];
-  if(!u||u.status!=='approved'){await setSession(null);return;}
-  enterApp(s.username,'user');
-}
-init();
-
 // ═══════════════════════════════════════════════════
 // MAP ENGINE
 // ═══════════════════════════════════════════════════
@@ -421,7 +208,7 @@ function adj(cx,cz,set){return set.has(K(cx-1,cz))||set.has(K(cx+1,cz))||set.has
 function connected(set){if(set.size<=1)return true;const sv=set.values().next().value,vis=new Set([sv]),q=[sv];while(q.length){const[x,z]=UK(q.shift());for(const[nx,nz]of[[x-1,z],[x+1,z],[x,z-1],[x,z+1]]){const k=K(nx,nz);if(set.has(k)&&!vis.has(k)){vis.add(k);q.push(k);}}}return vis.size===set.size;}
 function tooClose(cx,cz,ownId){for(const b of bases){if(b.id===ownId)continue;for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if(b.chunks.has(K(cx+dx,cz+dz)))return true;}return false;}
 function borderCount(cx,cz){let n=0;if(cx<BZONE)n++;if(cx>=CW-BZONE)n++;if(cz<BZONE)n++;if(cz>=CH-BZONE)n++;return n;}
-const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?25:b===1?36:49;};
+const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?30:b===1?36:50;};
 const PRICES=[0,0,1000,2828,5196,8000,11180,14697,18520,22627,27000,31623,36483,41569,46872,52383,58095,64000,70093,76368,82819,89443,96234,103189,110304,117576];
 for(let n=26;n<=49;n++)PRICES.push(Math.round(Math.pow(n-1,1.5)*200)*5);
 const totalCost=n=>{let t=0;for(let i=1;i<=Math.min(n,PRICES.length-1);i++)t+=PRICES[i];return t;};
