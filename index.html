@@ -180,7 +180,7 @@ textarea.code-box{width:100%;resize:none;outline:none;color:var(--text);height:8
 const cv=document.getElementById('cv-el');
 const ctx=cv.getContext('2d');
 const MAP=document.getElementById('map-el');
-const CW=120,CH=120,TILE=7,BZONE=7;
+const CW=120,CH=120,TILE=7,BZONE=7,CLAIM_GAP=5;
 let scale=1,panX=0,panY=0,dragging=false,lx=0,ly=0,hcx=-1,hcz=-1;
 let lastDist=0,pinching=false,pmx=0,pmy=0,activeTool='pan';
 let bases=[],active=null,placing=null,selCol='#8b5cf6';
@@ -206,7 +206,7 @@ const PH=cz=>PZ(cz+1)-PZ(cz);
 
 function adj(cx,cz,set){return set.has(K(cx-1,cz))||set.has(K(cx+1,cz))||set.has(K(cx,cz-1))||set.has(K(cx,cz+1));}
 function connected(set){if(set.size<=1)return true;const sv=set.values().next().value,vis=new Set([sv]),q=[sv];while(q.length){const[x,z]=UK(q.shift());for(const[nx,nz]of[[x-1,z],[x+1,z],[x,z-1],[x,z+1]]){const k=K(nx,nz);if(set.has(k)&&!vis.has(k)){vis.add(k);q.push(k);}}}return vis.size===set.size;}
-function tooClose(cx,cz,ownId){for(const b of bases){if(b.id===ownId)continue;for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if(b.chunks.has(K(cx+dx,cz+dz)))return true;}return false;}
+function tooClose(cx,cz,ownId){for(const b of bases){if(b.id===ownId)continue;for(let dx=-CLAIM_GAP;dx<=CLAIM_GAP;dx++)for(let dz=-CLAIM_GAP;dz<=CLAIM_GAP;dz++)if(b.chunks.has(K(cx+dx,cz+dz)))return true;}return false;}
 function borderCount(cx,cz){let n=0;if(cx<BZONE)n++;if(cx>=CW-BZONE)n++;if(cz<BZONE)n++;if(cz>=CH-BZONE)n++;return n;}
 const maxC=(cx,cz)=>{const b=borderCount(cx,cz);return b>=2?30:b===1?36:49;};
 const PRICES=[0,0,1000,2828,5196,8000,11180,14697,18520,22627,27000,31623,36483,41569,46872,52383,58095,64000,70093,76368,82819,89443,96234,103189,110304,117576];
@@ -229,7 +229,7 @@ function draw(){
   ctx.strokeStyle='#d5d5d5';
   for(let i=Math.floor(x0/10)*10;i<=x1;i+=10){const p=PX(i);ctx.beginPath();ctx.moveTo(p,PZ(z0));ctx.lineTo(p,PZ(z1));ctx.stroke();}
   for(let i=Math.floor(z0/10)*10;i<=z1;i+=10){const p=PZ(i);ctx.beginPath();ctx.moveTo(PX(x0),p);ctx.lineTo(PX(x1),p);ctx.stroke();}
-  if(placing||activeTool==='edit'){const ownId=active?active.id:null;for(const b of bases){if(b.id===ownId)continue;for(const k of b.chunks){const[cx,cz]=UK(k);for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){if(!dx&&!dz)continue;const nx=cx+dx,nz=cz+dz;if(nx<0||nx>=CW||nz<0||nz>=CH)continue;if(b.chunks.has(K(nx,nz)))continue;if(ownId&&active&&active.chunks.has(K(nx,nz)))continue;if(!bases.some(bb=>bb.id!==b.id&&bb.chunks.has(K(nx,nz)))){ctx.fillStyle='#fce8e8';ctx.fillRect(PX(nx),PZ(nz),PW(nx),PH(nz));}}}}}
+  if(placing||activeTool==='edit'){const ownId=active?active.id:null;for(const b of bases){if(b.id===ownId)continue;for(const k of b.chunks){const[cx,cz]=UK(k);for(let dx=-CLAIM_GAP;dx<=CLAIM_GAP;dx++)for(let dz=-CLAIM_GAP;dz<=CLAIM_GAP;dz++){if(!dx&&!dz)continue;const nx=cx+dx,nz=cz+dz;if(nx<0||nx>=CW||nz<0||nz>=CH)continue;if(b.chunks.has(K(nx,nz)))continue;if(ownId&&active&&active.chunks.has(K(nx,nz)))continue;if(!bases.some(bb=>bb.id!==b.id&&bb.chunks.has(K(nx,nz)))){ctx.fillStyle='#fce8e8';ctx.fillRect(PX(nx),PZ(nz),PW(nx),PH(nz));}}}}}
   for(const b of bases){const dr=parseInt(b.color.slice(1,3),16),dg=parseInt(b.color.slice(3,5),16),db=parseInt(b.color.slice(5,7),16);const fill=`rgb(${Math.round(dr*.18+255*.82)},${Math.round(dg*.18+255*.82)},${Math.round(db*.18+255*.82)})`;for(const k of b.chunks){const[cx,cz]=UK(k);ctx.fillStyle=fill;ctx.fillRect(PX(cx),PZ(cz),PW(cx),PH(cz));}}
   const owner=new Map();for(const b of bases)for(const k of b.chunks)owner.set(k,b.id);
   const BW=Math.max(1,Math.min(3,Math.round(scale*1.2)));
